@@ -55,6 +55,9 @@ whether a mod that overrides a pack's table even works.
 **It must be settled by experiment, not by assumption.** The design therefore
 starts with a precedence probe, not with a scanner:
 
+- `probes/precedence/` generates the packages and documents the procedure. Two of
+  the three experiments still need a game launch; the results table there is the
+  deliverable.
 - Build two tiny packages with the same TGI and *different text for the same key*.
   Install one in the Mods folder and one in a scratch location that the game
   loads, and read which text appears.
@@ -62,6 +65,8 @@ starts with a precedence probe, not with a scanner:
   two Mods files with the same TGI, and `<pack>` vs `Delta\<pack>`.
 - Record the outcome per pair in a table in this repository. Until a row is
   filled in, nothing in the tool may rely on that ordering.
+- **Already answered:** Mods beats the game's own copy of the base table
+  (observed in game, 2026-10-16). The remaining rows are open.
 
 SDX (`Delta`) stays **out of scope for catalogs** until this is answered: files
 are detected, counted and reported as excluded, and the manifest says so. The

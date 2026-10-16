@@ -151,10 +151,12 @@ Then launch the game and check:
       `Halda maailmu` (Manage Worlds), `Välju mängust` (Exit Game).
 - [ ] **Build/Live mode** buttons read `Ehitusrežiim` / `Elurežiim`, and the
       household screen shows `Leibkonnad`.
-- [ ] **Options** screen: `Mängu valikud`, `Graafika`, and — this one is
-      deliberate — the Sound tab reads `Heli — ÕÄÖÜ õäöü ŠŽ šž`. That label is a
-      character-rendering probe, not real Estonian. Check that all twelve letters
-      render as letters: no empty boxes, no question marks, no missing glyphs.
+- [ ] **Options** screen: the tabs read `Mängimine`, `Graafika`, `Heli`,
+      `Juurdepääsetavus`, `Autorid` and so on, and inside `Heli` the labels are
+      `Helitugevus`, `Hääled:`, `Kasutajaliidese heli:`, `Muusika`.
+      (The `Heli` tab carried the `ÕÄÖÜ õäöü ŠŽ šž` rendering probe while glyph
+      coverage was being established; that is confirmed, so the probe is retired.
+      Its result is recorded in [Status](#status).)
 - [ ] `Loo sim` appears for Create a Sim.
 - [ ] At least one string in the Simology panel or a Sim tooltip shows
       `Päevi vananemiseni: <number>`, i.e. the `{0.Number}` substitution still
