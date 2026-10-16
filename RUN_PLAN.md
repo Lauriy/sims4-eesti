@@ -75,6 +75,11 @@ endings Estonian does not build (-ailla, -aile, -inen, -ssa, -minen, -matta) and
 marks any hit that also appears in the Finnish of the same key. On the 4,043
 translated strings: 3 hits, all the same real defect, no false positives.
 
+Its limit, learned the same day: "Vehtle" (for WooHoo) is a Finnish stem with
+Estonian grammar, which no ending rule can catch - a player found it. Expect the
+lint to catch copies of Finnish *word forms* and to miss hybrids; the review pass
+at the end of the run is what covers the rest.
+
 Then the two reports used on the trial's output: same English text with more than
 one Estonian rendering, and new translations that contradict something already
 deployed. Both were run from scripts in `work/` and should become commands, since

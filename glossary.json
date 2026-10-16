@@ -434,6 +434,16 @@
         "komplektid"
       ],
       "note": "the small packs; see Expansion Packs"
+    },
+    {
+      "en": "WooHoo",
+      "et": "Armatsemine",
+      "accept": [
+        "armatsemise",
+        "armatsemist",
+        "armatsemis-"
+      ],
+      "note": "the project owner's choice, 2026-10-17, over Vuhuu/Armumängud/Vehtle; a real word rather than slang, and it inflects in sentences (164 base-game strings still to translate use it). 'Mess Around' is the milder variant the player can switch on and stays a separate term."
     }
   ],
   "style": [
@@ -442,6 +452,7 @@
     "Keep English proper nouns that Estonian players know in English (Sim, The Sims 4) rather than inventing translations.",
     "Prefer the glossary rendering over your own synonym, even when yours reads better in isolation: two screens disagreeing is worse than one screen being slightly stiff.",
     "Moodlet sources, the 1,588 strings shaped \"(From X)\", are written \"(X tõttu)\": \"(From Snob Trait)\" -> \"(snobi iseloomujoone tõttu)\". The first batches split between this and \"(põhjus: X)\"; this is the agreed form.",
-    "Square brackets hold player-facing text, not codes: translate inside them, keeping the brackets ([Recovered] -> [Taastatud]). Only [PH] and [DNT] are development markers and stay as they are."
+    "Square brackets hold player-facing text, not codes: translate inside them, keeping the brackets ([Recovered] -> [Taastatud]). Only [PH] and [DNT] are development markers and stay as they are.",
+    "A reference language is for how a construct was handled, never for words: \"flirttailla\" and \"vehtailu\" are Finnish and were copied into the Estonian once each (Flirttaile, Vehtle). If a word is not one you would say, do not use it."
   ]
 }

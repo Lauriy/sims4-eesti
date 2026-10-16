@@ -15,6 +15,12 @@
  * the 4,043 translated strings: 3 hits, all the same real defect, 0 false
  * positives.
  *
+ * Known limit, from the same playtest: "Vehtle" for the WooHoo interaction was
+ * built by taking the Finnish stem "veht-" from a *different* key's reference and
+ * adding Estonian verb grammar. No ending rule catches that, because the ending is
+ * Estonian and the stem is copied. It was found by a player, not by this. The
+ * remaining defence is the one that found both: a human reading the game.
+ *
  * It reports; it never rewrites. Estonian has borrowed from Finnish for centuries
  * and a form that looks Finnish is not proof of a mistake - "kuninkaallinen" is a
  * word, "-llinen" is Estonian, and the reader decides.
