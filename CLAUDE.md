@@ -113,6 +113,12 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
 - Never treat `%` as a formatting token. Never reject a whole table because one
   untranslated entry has complex syntax.
 
+## Lessons already paid for
+
+`LESSONS.md` holds the hard-won ones — read it before designing a rule, a
+heuristic or a batch run. It is short and every item has a number or a story
+behind it.
+
 ## Claims this project may and may not make
 
 - **Never claim more of the in-game gate than `README.md`'s Status records.** The

@@ -453,7 +453,8 @@ Phase 1 (one package, one table, safe build, in-game proof) is complete. Phase 2
 installation-wide catalog, source diffing and bulk translation pipeline are built;
 what remains of it is the review loop and the community side. See
 `Sims4_Eesti_Implementation_Brief.md`, `PHASE2_DESIGN.md` and
-`IMPLEMENTATION_NOTES.md`.
+`IMPLEMENTATION_NOTES.md`. What the project learned the hard way is in
+`LESSONS.md`.
 
 ---
 
