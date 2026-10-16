@@ -8,10 +8,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { buildPackage, defaultManifestPath, BuildError } from "./build.js";
-import { extractCatalog, loadCatalog, searchCatalog } from "./catalog.js";
+import { extractCatalog, loadCatalog, searchCatalog, writeJsonAtomic } from "./catalog.js";
 import { coverageByPackage, scanInstallation } from "./scan.js";
 import { exportBatches, importTranslations, translationStats } from "./translate.js";
 import { mergeCatalogs } from "./merge.js";
+import { checkGlossary, loadGlossary, mergeTermReports } from "./glossary.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -190,6 +191,25 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       },
       translations: { help: "Translations file to update" },
       metadata: { help: "Metadata file to update" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  "glossary-check": {
+    summary: "Find strings that ignore the agreed terminology",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      glossary: { help: "Glossary file to check against (default glossary.json)" },
+      translations: { help: "Translations file to check" },
+      limit: { help: "Show at most this many violations (default 40)" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  "glossary-merge": {
+    summary: "Merge the terms translators reported into the glossary file",
+    flags: {
+      in: { help: "Term files (JSON: English term -> Estonian) to merge, comma-separated" },
+      glossary: { help: "Glossary file to update (default glossary.json)" },
+      write: { boolean: true, help: "Actually write the merged glossary (otherwise report only)" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -585,6 +605,83 @@ function runTranslateImport(parsed: ParsedArgs, config: Config): number {
   return EXIT_OK;
 }
 
+function runGlossaryCheck(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const glossaryPath = parsed.values.get("glossary") ?? "glossary.json";
+  const limit = Number(parsed.values.get("limit") ?? 40);
+  const glossary = loadGlossary(glossaryPath);
+  const catalog = loadCatalog(catalogPath);
+  const translations = loadTranslations(translationsPath);
+  const { violations, checked, orphanTranslationIds } = checkGlossary(glossary, catalog, translations);
+
+  console.log(`Glossary ${glossaryPath}: ${glossary.terms.length} term(s)`);
+  console.log(`Checked ${checked} translated occurrence(s) from ${catalogPath}: ${violations.length} do not use the agreed term`);
+  if (orphanTranslationIds.length > 0) {
+    console.log(
+      `\n${orphanTranslationIds.length} translation(s) have no occurrence in this catalog, so they were NOT checked ` +
+        `(e.g. ${orphanTranslationIds[0]}).\nPass the install-wide catalog (work/beta-catalog.json) to check everything.`
+    );
+  }
+  console.log();
+  const byTerm = new Map<string, number>();
+  for (const violation of violations) byTerm.set(violation.term, (byTerm.get(violation.term) ?? 0) + 1);
+  let printed = 0;
+  for (const [term, count] of [...byTerm].sort((a, b) => b[1] - a[1])) {
+    const example = violations.find((violation) => violation.term === term)!;
+    console.log(`${term} (${count}): expected ${example.expected.join(" / ")}`);
+    for (const violation of violations.filter((v) => v.term === term).slice(0, Math.max(0, limit - printed))) {
+      console.log(`    en ${JSON.stringify(violation.english).slice(0, 66)}`);
+      console.log(`    et ${JSON.stringify(violation.estonian).slice(0, 66)}`);
+      console.log(`       ${violation.occurrenceId}`);
+      printed += 1;
+    }
+  }
+  if (violations.length > printed) {
+    console.log(`(${violations.length - printed} more not shown; raise --limit to see them)`);
+  }
+  if (violations.length > 0) {
+    console.log(`
+These are reports, not errors: Estonian inflects, and a term can legitimately`);
+    console.log(`have another rendering. Fix the offender with "set", or add the form to the term's`);
+    console.log(`"accept" list in ${glossaryPath} when the translation is right and the checker is wrong.`);
+  }
+  return EXIT_OK;
+}
+
+function runGlossaryMerge(parsed: ParsedArgs, config: Config): number {
+  const glossaryPath = parsed.values.get("glossary") ?? "glossary.json";
+  const glossary = loadGlossary(glossaryPath);
+  const inputs = (parsed.values.get("in") ?? "")
+    .split(",")
+    .map((item) => resolve(item.trim()))
+    .filter(Boolean);
+  const reports: Record<string, string>[] = [];
+  for (const path of inputs) {
+    if (!existsSync(path)) throw new UsageError(`No such term file: "${path}"`);
+    reports.push(JSON.parse(readFileSync(path, "utf8")) as Record<string, string>);
+  }
+  const { added, conflicts } = mergeTermReports(glossary, reports);
+  console.log(`Read ${reports.length} term file(s)`);
+  console.log(`  new terms: ${added.length}`);
+  for (const term of added.slice(0, 20)) console.log(`    ${term.en} -> ${term.et}`);
+  console.log(`  conflicts with agreed terms: ${conflicts.length}`);
+  for (const conflict of conflicts.slice(0, 20)) {
+    console.log(`    ${conflict.en}: agreed "${conflict.agreed}", suggested "${conflict.suggested}"`);
+  }
+  if (!parsed.booleans.has("write")) {
+    console.log("");
+    console.log("Report only. Re-run with --write to add the new terms to the glossary.");
+    return EXIT_OK;
+  }
+  if (added.length > 0) {
+    writeJsonAtomic(glossaryPath, { ...glossary, terms: [...glossary.terms, ...added] });
+    console.log(`
+Wrote ${added.length} new term(s) to ${glossaryPath}`);
+  }
+  return EXIT_OK;
+}
+
 function runTranslateStats(parsed: ParsedArgs, config: Config): number {
   const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
   const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
@@ -851,6 +948,10 @@ function main(argv: string[]): number {
       return runTranslateExport(parsed, config);
     case "translate-import":
       return runTranslateImport(parsed, config);
+    case "glossary-check":
+      return runGlossaryCheck(parsed, config);
+    case "glossary-merge":
+      return runGlossaryMerge(parsed, config);
     case "translate-stats":
       return runTranslateStats(parsed, config);
     case "coverage":

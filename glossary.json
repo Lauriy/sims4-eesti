@@ -1,28 +1,399 @@
 {
-  "$comment": "Estonian terminology chosen for the Phase 1 prototype. Not yet enforced by validation: this is the agreed vocabulary that translations should follow, and it is what Phase 3/4 glossary checks will be built from.",
+  "$comment": "Agreed Estonian terminology for this project. Injected into every translation batch and checked against finished translations by `glossary-check`. Machine-proposed from the English corpus with Finnish (official EA translation) as reference, so treat every row as correctable: fix the Estonian, add `accept` alternatives rather than arguing with the checker. `accept` lists equally correct renderings; `note` says when a term means something else in another context; `ambiguous` marks a common English word that also has ordinary-language senses, so the checker only polices it in short labels and trusts the prompt to prevent drift in prose.",
   "targetLocale": "et-EE",
   "sourceLocale": "en_US",
   "terms": [
-    { "en": "New Game", "et": "Uus mäng", "note": "main menu" },
-    { "en": "Load Game", "et": "Laadi mäng", "note": "main menu and in-game menu" },
-    { "en": "Save Game", "et": "Salvesta mäng", "note": "verb form matches the Estonian UI convention of imperative buttons" },
-    { "en": "Resume", "et": "Jätka", "note": "same word as Continue; Estonian uses one verb for both" },
-    { "en": "Continue", "et": "Jätka" },
-    { "en": "Options", "et": "Valikud" },
-    { "en": "Game Options", "et": "Mängu valikud" },
-    { "en": "Graphics", "et": "Graafika" },
-    { "en": "Sound", "et": "Heli" },
-    { "en": "Manage Worlds", "et": "Halda maailmu", "note": "\"world\" in The Sims 4 is the neighbourhood screen: maailm, not ilm" },
-    { "en": "Create a Sim", "et": "Loo sim", "note": "\"Sim\" stays capitalised as a proper noun in Estonian text too; no case ending is attached to it" },
-    { "en": "Build Mode", "et": "Ehitusrežiim" },
-    { "en": "Live Mode", "et": "Elurežiim" },
-    { "en": "Households", "et": "Leibkonnad", "note": "Estonian \"leibkond\" is the standard term for a household unit" },
-    { "en": "Exit Game", "et": "Välju mängust" },
-    { "en": "Days till age up", "et": "Päevi vananemiseni", "note": "kept as a noun phrase so the number can follow the colon" }
+    {
+      "en": "New Game",
+      "et": "Uus mäng",
+      "note": "main menu"
+    },
+    {
+      "en": "Load Game",
+      "et": "Laadi mäng",
+      "note": "main menu and in-game menu"
+    },
+    {
+      "en": "Save Game",
+      "et": "Salvesta mäng",
+      "note": "imperative buttons follow the Estonian UI convention"
+    },
+    {
+      "en": "Resume Game",
+      "et": "Jätka mängu"
+    },
+    {
+      "en": "Continue",
+      "et": "Jätka",
+      "ambiguous": true
+    },
+    {
+      "en": "Options",
+      "et": "Valikud",
+      "accept": [
+        "Valikute"
+      ],
+      "note": "the settings screen; Finnish uses Asetukset, Estonian 'Valikud' is the established convention"
+    },
+    {
+      "en": "Settings",
+      "et": "Seaded",
+      "accept": [
+        "Seadete"
+      ]
+    },
+    {
+      "en": "Graphics",
+      "et": "Graafika"
+    },
+    {
+      "en": "Audio",
+      "et": "Heli",
+      "note": "the options tab"
+    },
+    {
+      "en": "Sound",
+      "et": "Heli",
+      "note": "audio in general; also a build/buy tag"
+    },
+    {
+      "en": "Music",
+      "et": "Muusika"
+    },
+    {
+      "en": "Volume",
+      "et": "Helitugevus"
+    },
+    {
+      "en": "Manage Worlds",
+      "et": "Halda maailmu"
+    },
+    {
+      "en": "Create a Sim",
+      "et": "Loo sim"
+    },
+    {
+      "en": "Build Mode",
+      "et": "Ehitusrežiim"
+    },
+    {
+      "en": "Live Mode",
+      "et": "Elurežiim"
+    },
+    {
+      "en": "Households",
+      "et": "Leibkonnad"
+    },
+    {
+      "en": "household",
+      "et": "leibkond",
+      "accept": [
+        "leibkonna",
+        "leibkonnad",
+        "leibkonnal",
+        "leibkonda"
+      ]
+    },
+    {
+      "en": "Exit Game",
+      "et": "Välju mängust"
+    },
+    {
+      "en": "Gallery",
+      "et": "Galerii"
+    },
+    {
+      "en": "Library",
+      "et": "Kogu",
+      "note": "the Gallery's saved-items tab; a public library building is 'raamatukogu'"
+    },
+    {
+      "en": "Play Scenario",
+      "et": "Mängi stsenaariumi"
+    },
+    {
+      "en": "skill",
+      "et": "oskus",
+      "accept": [
+        "oskuse",
+        "oskused",
+        "oskusi",
+        "oskust"
+      ]
+    },
+    {
+      "en": "lot",
+      "et": "krunt",
+      "accept": [
+        "krundi",
+        "krundid",
+        "krundil",
+        "krunti"
+      ],
+      "exclude": "\\ba lot\\b|\\blots of\\b",
+      "note": "the building plot; English 'a lot of' is a quantity, not a lot",
+      "ambiguous": true
+    },
+    {
+      "en": "world",
+      "et": "maailm",
+      "accept": [
+        "maailma",
+        "maailmad",
+        "maailmas",
+        "maailmu"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "career",
+      "et": "karjäär",
+      "accept": [
+        "karjääri",
+        "karjäärid",
+        "karjääri"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "level",
+      "et": "tase",
+      "accept": [
+        "taseme",
+        "tasemed",
+        "tasemele",
+        "taset"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "trait",
+      "et": "iseloomujoon",
+      "accept": [
+        "iseloomujoone",
+        "iseloomujooned",
+        "iseloomujooni"
+      ]
+    },
+    {
+      "en": "mood",
+      "et": "tuju",
+      "accept": [
+        "tujud",
+        "tuju"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "aspiration",
+      "et": "püüdlus",
+      "accept": [
+        "püüdluse",
+        "püüdlused",
+        "püüdlusi"
+      ]
+    },
+    {
+      "en": "relationship",
+      "et": "suhe",
+      "accept": [
+        "suhted",
+        "suhte",
+        "suhteid"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "inventory",
+      "et": "inventar",
+      "accept": [
+        "inventari",
+        "inventaris"
+      ],
+      "note": "the Sim's carried items",
+      "ambiguous": true
+    },
+    {
+      "en": "reward",
+      "et": "tasu",
+      "accept": [
+        "tasu",
+        "tasud",
+        "tasuga"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "collection",
+      "et": "kollektsioon",
+      "accept": [
+        "kollektsiooni",
+        "kollektsioonid",
+        "kogumik",
+        "kogumiku"
+      ],
+      "note": "the collectible sets; 'kogu' is the Gallery tab, 'raamatukogu' is a library building",
+      "ambiguous": true
+    },
+    {
+      "en": "friendship",
+      "et": "sõprus",
+      "accept": [
+        "sõpruse",
+        "sõprust"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "pregnancy",
+      "et": "rasedus",
+      "accept": [
+        "raseduse",
+        "rasedust"
+      ]
+    },
+    {
+      "en": "toddler",
+      "et": "väikelaps",
+      "accept": [
+        "väikelapse",
+        "väikelapsed",
+        "väikelapsi"
+      ]
+    },
+    {
+      "en": "teen",
+      "et": "teismeline",
+      "accept": [
+        "teismelise",
+        "teismelised",
+        "teismelisi"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "elder",
+      "et": "eakas",
+      "accept": [
+        "eaka",
+        "eakad",
+        "eakaid"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "ghost",
+      "et": "kummitus",
+      "accept": [
+        "kummituse",
+        "kummitused"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "promotion",
+      "et": "edutamine",
+      "accept": [
+        "edutamise",
+        "edutamist"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "vacation",
+      "et": "puhkus",
+      "accept": [
+        "puhkuse",
+        "puhkusel",
+        "puhkust"
+      ],
+      "ambiguous": true
+    },
+    {
+      "en": "venue",
+      "et": "koht",
+      "accept": [
+        "koha",
+        "kohad",
+        "paik",
+        "paiga",
+        "paigad"
+      ],
+      "note": "a lot's venue type"
+    },
+    {
+      "en": "Greeting",
+      "et": "Tervitus"
+    },
+    {
+      "en": "Cheat",
+      "et": "Kood",
+      "accept": [
+        "koodi",
+        "koodid"
+      ],
+      "note": "debug/cheat commands; Finnish keeps 'huijaus', Estonian players say 'kood'",
+      "ambiguous": true
+    },
+    {
+      "en": "Days till age up",
+      "et": "Päevi vananemiseni"
+    },
+    {
+      "en": "Select",
+      "et": "Vali",
+      "note": "imperative",
+      "ambiguous": true
+    },
+    {
+      "en": "Click",
+      "et": "Klõpsa",
+      "note": "imperative",
+      "ambiguous": true
+    },
+    {
+      "en": "Buy",
+      "et": "Osta",
+      "accept": [
+        "osta",
+        "ostma",
+        "ostmise",
+        "ostab"
+      ],
+      "exclude": "(can'?t|cannot|to) buy|\\bbuy (me|you|it|them|us)\\b",
+      "note": "imperative, and the Buy Mode / Buy Item labels; ordinary prose about buying is not this term",
+      "ambiguous": true
+    },
+    {
+      "en": "Sell",
+      "et": "Müü",
+      "accept": [
+        "müü",
+        "müüma",
+        "müümise",
+        "müüb"
+      ],
+      "note": "imperative",
+      "ambiguous": true
+    },
+    {
+      "en": "Home",
+      "et": "Avaleht",
+      "accept": [
+        "kodu",
+        "kodus",
+        "koju",
+        "kodu"
+      ],
+      "exclude": "home (in|to|of|for|from|is|lot|world)|come home|go home|at home|(my|your|their|his|her|its) home",
+      "note": "the navigation tab is 'Avaleht'; everywhere else home is the Sim's 'kodu'",
+      "ambiguous": true
+    }
   ],
   "style": [
     "Buttons and menu entries are imperative verb phrases (Salvesta, Laadi, Välju), not nouns.",
     "Do not attach Estonian case endings to runtime-inserted names or values; rephrase instead.",
-    "Keep English proper nouns that Estonian players know in English (Sim, The Sims 4) rather than inventing translations."
+    "Keep English proper nouns that Estonian players know in English (Sim, The Sims 4) rather than inventing translations.",
+    "Prefer the glossary rendering over your own synonym, even when yours reads better in isolation: two screens disagreeing is worse than one screen being slightly stiff."
   ]
 }

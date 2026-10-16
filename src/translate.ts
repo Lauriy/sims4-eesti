@@ -18,6 +18,7 @@ import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSy
 import { basename, join } from "node:path";
 import { TOOL_NAME, TOOL_VERSION, loadCatalog, writeJsonAtomic, type Catalog } from "./catalog.js";
 import { flatten, loadReferenceFiles, referencesFromPackage } from "./references.js";
+import { glossaryForPrompt, loadGlossary } from "./glossary.js";
 import {
   loadMetadata,
   loadTranslations,
@@ -63,6 +64,8 @@ export interface BatchFile {
   createdAt: string;
   targetLocale: string;
   notes: string[];
+  /** Agreed terminology for this batch's concepts. Use these renderings. */
+  glossary: { en: string; et: string; note?: string }[];
   /** Strings still to translate, in catalog order. */
   entries: BatchEntry[];
 }
@@ -83,6 +86,8 @@ export interface ExportOptions {
   referenceDirs?: string[];
   /** How many reference languages to show per entry (default 3). */
   maxReferenceLanguages?: number;
+  /** Agreed terminology, injected into every batch (default glossary.json). */
+  glossaryPath?: string;
 }
 
 export interface ExportResult {
@@ -221,6 +226,7 @@ export function exportBatches(options: ExportOptions): ExportResult {
   mkdirSync(options.outDir, { recursive: true });
   const createdAt = new Date().toISOString();
   const batchPaths: string[] = [];
+  const glossary = loadGlossary(options.glossaryPath ?? "glossary.json");
 
   for (let offset = 0; offset < translatable.length; offset += batchSize) {
     const slice = translatable.slice(offset, offset + batchSize);
@@ -230,9 +236,10 @@ export function exportBatches(options: ExportOptions): ExportResult {
       schemaVersion: BATCH_SCHEMA_VERSION,
       createdAt,
       targetLocale: "et-EE",
+      glossary: glossaryForPrompt(glossary),
       notes: [
         ...STYLE_NOTES,
-        "See glossary.json in the repository root for agreed vocabulary and style rules.",
+        "The glossary field in this file is the agreed vocabulary for this project. Use those renderings; if one is wrong for your string, translate it your way and say so in the terms file.",
         "The context block describes each string: what it reads as, the strings around it in the game's own file, and reference translations in other languages. The references are hints, not authority - Estonian is not Finnish, and a professional translation of the same string can still be the wrong shape for Estonian.",
       ],
       entries: slice.map((occurrence) => {
