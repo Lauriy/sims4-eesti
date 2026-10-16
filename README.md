@@ -30,7 +30,7 @@ English .package ──extract──► catalog.json        (every string, with 
                     set ──────────┤ translations/et-EE.json  + metadata.json
                                   │                (state, source hash, origin)
                     build ────────▼
-                              dist/Sims4_Eesti.package
+                              dist/!Sims4_Eesti.package
                               dist/Sims4_Eesti.manifest.json
                                   │
                     deploy ───────► your Mods folder  (one file, nothing else)
@@ -82,25 +82,25 @@ npm run cli -- search --catalog work/base/catalog.json --text "Mode" --translata
 npm run cli -- set --catalog work/base/catalog.json --id "BASE|220557DA:00000000:0054935F2685AD48|0DFED87C" --text "Uus mäng"
 
 # 4. Build the mod (--include-unreviewed applies drafts/machine text; reviewed text needs no flag)
-npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/Sims4_Eesti.package --game-version "1.128.90.1030"
+npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/!Sims4_Eesti.package --game-version "1.128.90.1030"
 
 # 5. Install: always dry-run first (see the manual test plan below)
-npm run cli -- deploy --file dist/Sims4_Eesti.package --mods-dir "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods" --dry-run
+npm run cli -- deploy --file dist/!Sims4_Eesti.package --mods-dir "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods" --dry-run
 ```
 
 The real install (only after the dry run shows the paths you expect, and with
 **the game closed**):
 
 ```powershell
-npm run cli -- deploy --file dist/Sims4_Eesti.package --mods-dir "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods"
+npm run cli -- deploy --file dist/!Sims4_Eesti.package --mods-dir "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods"
 ```
 
-That copies exactly one file, `Sims4_Eesti.package`, into the Mods folder. It does
+That copies exactly one file, `!Sims4_Eesti.package`, into the Mods folder. It does
 not touch other mods, `Resource.cfg`, caches, or your options, and it does not
 start or stop the game. Replacing an earlier build of this mod first copies the
 old file to `work/backups/` (outside Mods).
 
-To remove the mod again: delete `Sims4_Eesti.package` from the Mods folder.
+To remove the mod again: delete `!Sims4_Eesti.package` from the Mods folder.
 Nothing else was changed.
 
 ### Options that matter
@@ -142,7 +142,7 @@ Before you start:
 - [ ] Confirm the game is running in **English** and that
       *Options → Game Options → Other → Enable Custom Content and Mods* is on.
 - [ ] **Close the game**, then install:
-      `npm run cli -- deploy --file dist/Sims4_Eesti.package --mods-dir "<your Mods folder>"`
+      `npm run cli -- deploy --file dist/!Sims4_Eesti.package --mods-dir "<your Mods folder>"`
 
 Then launch the game and check:
 
@@ -173,7 +173,7 @@ Then launch the game and check:
       table (58,374 entries), and the mod overrides that one table. Strings in
       other packages come from tables with different resource IDs and are not
       touched.
-- [ ] **Optional independent inspection.** Open `dist/Sims4_Eesti.package` in
+- [ ] **Optional independent inspection.** Open `dist/!Sims4_Eesti.package` in
       Sims 4 Studio (a separate, independently written tool — *not* a dependency
       of this project, and not installed on this machine) and confirm it lists one
       string table, `220557DA:00000000:0054935F2685AD48`, with 58,374 entries.
@@ -188,7 +188,7 @@ Then launch the game and check:
 
 Finally, verify removal:
 
-- [ ] Close the game, delete only `Sims4_Eesti.package` from the Mods folder,
+- [ ] Close the game, delete only `!Sims4_Eesti.package` from the Mods folder,
       restart, and confirm the interface is back in English.
 
 If the text does **not** change at all, the likely causes are, in order: the mod

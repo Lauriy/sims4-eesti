@@ -11,6 +11,7 @@ import { buildPackage, defaultManifestPath, BuildError } from "./build.js";
 import { extractCatalog, loadCatalog, searchCatalog } from "./catalog.js";
 import { coverageByPackage, scanInstallation } from "./scan.js";
 import { exportBatches, importTranslations, translationStats } from "./translate.js";
+import { mergeCatalogs } from "./merge.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -33,7 +34,7 @@ const DEFAULT_CONFIG: Config = {
   catalogPath: "work/base/catalog.json",
   translationsPath: "translations/et-EE.json",
   metadataPath: "translations/metadata.json",
-  outPackage: "dist/Sims4_Eesti.package",
+  outPackage: "dist/!Sims4_Eesti.package",
   modsDir: null,
   deployStatePath: "work/deploy-state.json",
 };
@@ -46,6 +47,7 @@ Commands:
   extract   Read one English .package and write a catalog of its strings
   scan      Find every string table installed and catalog them all at once
   coverage  Report how many strings each package contributes
+  merge     Combine catalogs into one (e.g. the game's and the Mods folder's)
   translate-export  Write batches of untranslated strings for any engine to fill in
   translate-import  Read filled-in batches back, validating every entry
   translate-stats   Report how much of each package is translated
@@ -60,8 +62,8 @@ Typical session (paths are examples; use your own):
   npm run cli -- extract --package "C:\\Program Files (x86)\\Steam\\steamapps\\common\\The Sims 4\\Data\\Client\\Strings_ENG_US.package" --out work/base
   npm run cli -- search --catalog work/base/catalog.json --text "New Game"
   npm run cli -- set --catalog work/base/catalog.json --id "<ID printed by search>" --text "Uus mäng"
-  npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/Sims4_Eesti.package
-  npm run cli -- deploy --file dist/Sims4_Eesti.package --mods-dir "C:\\Users\\you\\Documents\\Electronic Arts\\The Sims 4\\Mods" --dry-run
+  npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/!Sims4_Eesti.package
+  npm run cli -- deploy --file dist/!Sims4_Eesti.package --mods-dir "C:\\Users\\you\\Documents\\Electronic Arts\\The Sims 4\\Mods" --dry-run
 
 Options are read from config.json in the working directory when it exists
 (see config.example.json). Command-line flags always win.`;
@@ -138,6 +140,14 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
         boolean: true,
         help: "Read tables for languages other than English (a mod repeats its text per locale)",
       },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  merge: {
+    summary: "Combine catalogs into one (e.g. the game's and the Mods folder's)",
+    flags: {
+      catalogs: { help: "Catalogs to merge, comma-separated (required)" },
+      out: { help: "Where to write the merged catalog.json (required)" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -422,7 +432,7 @@ Wrote ${result.catalogPath}`);
   console.log(`Wrote ${result.indexPath}`);
   console.log(
     `
-Next: npm run cli -- build --catalog "${result.catalogPath}" --out dist/Sims4_Eesti.package --include-unreviewed`
+Next: npm run cli -- build --catalog "${result.catalogPath}" --out dist/!Sims4_Eesti.package --include-unreviewed`
   );
   return EXIT_OK;
 }
@@ -444,6 +454,23 @@ function runCoverage(parsed: ParsedArgs, config: Config): number {
     );
   }
   console.log(`  ${"total".padEnd(28)} ${String(total).padStart(7)} strings`);
+  return EXIT_OK;
+}
+
+function runMerge(parsed: ParsedArgs, config: Config): number {
+  const catalogs = required(parsed, "catalogs")
+    .split(",")
+    .map((item) => resolve(item.trim()))
+    .filter(Boolean);
+  const outPath = resolve(required(parsed, "out"));
+  const result = mergeCatalogs({ catalogPaths: catalogs, outPath });
+  console.log(`Merged ${catalogs.length} catalog(s) into ${result.outPath}`);
+  console.log(`  packages  ${result.packages}`);
+  console.log(`  tables    ${result.tables}`);
+  console.log(`  strings   ${result.strings}`);
+  if (result.duplicatePathsSkipped.length > 0) {
+    console.log(`  same file listed twice, counted once: ${result.duplicatePathsSkipped.length}`);
+  }
   return EXIT_OK;
 }
 
@@ -793,6 +820,8 @@ function main(argv: string[]): number {
       return runExtract(parsed, config);
     case "scan":
       return runScan(parsed, config);
+    case "merge":
+      return runMerge(parsed, config);
     case "translate-export":
       return runTranslateExport(parsed, config);
     case "translate-import":

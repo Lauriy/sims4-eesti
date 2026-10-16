@@ -27,6 +27,7 @@ import {
 import { sha256File, sha256Hex } from "./hashing.js";
 import { ENGLISH_LOCALE_BYTE, formatOccurrenceId, formatTgi, hex8, localeByteOf, toTgi } from "./ids.js";
 import { readRawStblBuffers, readStblTables, PackageReadError, type RawEntry } from "./package-io.js";
+import { ARTIFACT_NAME } from "./deploy.js";
 import { parseStblBuffer } from "./stbl-format.js";
 
 export const INSTALL_INDEX_SCHEMA_VERSION = 1;
@@ -38,6 +39,7 @@ export type Disposition =
   | "excluded-delta"
   | "no-string-tables"
   | "no-english-tables"
+  | "own-output"
   | "unreadable";
 
 export interface ScannedPackage {
@@ -225,6 +227,13 @@ export function scanInstallation(options: ScanOptions): ScanResult {
       });
     };
 
+    // Our own output is never a source: its text is already Estonian, and
+    // cataloguing it would offer 58,000 finished strings up for "translation".
+    const ownOutput = [ARTIFACT_NAME, "Sims4_Eesti.package"];
+    if (ownOutput.includes(basename(filePath))) {
+      record("own-output", "this is the output of this tool, not a translation source");
+      continue;
+    }
     if (isDeltaPath(gameRoot, filePath) && !options.includeDelta) {
       record("excluded-delta", "Delta (SDX) content: precedence is not established, so it is not read");
       continue;

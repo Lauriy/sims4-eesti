@@ -22,7 +22,17 @@ import { formatTgi, toTgi } from "./ids.js";
 import { readStblTables } from "./package-io.js";
 import { CompressionType } from "@s4tk/compression";
 
-export const ARTIFACT_NAME = "Sims4_Eesti.package";
+/**
+ * The file name used inside the Mods folder.
+ *
+ * The leading "!" is deliberate and load-bearing: when two packages claim the
+ * same resource, the game uses the one whose file name sorts first (measured in
+ * game, 2026-10-16 - see probes/precedence/README.md). Once this mod translates
+ * text that belongs to another mod, our copy of that table has to win, and those
+ * mods' own file names sort before any ordinary name. "!" sorts before digits and
+ * letters, which is why it is the convention mod authors already use.
+ */
+export const ARTIFACT_NAME = "!Sims4_Eesti.package";
 
 export class DeployError extends Error {
   constructor(message: string) {

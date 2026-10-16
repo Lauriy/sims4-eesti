@@ -10,6 +10,7 @@ import { createRequire } from "node:module";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { after, before, describe, it } from "node:test";
+import { ARTIFACT_NAME } from "../src/deploy.js";
 import { REAL_ENGLISH_INSTANCE, SAMPLE_KEYS, makeTempDir, removeDir, writeFixturePackage } from "./helpers.js";
 
 const CLI = join(process.cwd(), "src", "cli.ts");
@@ -211,13 +212,13 @@ describe("cli", () => {
     assert.equal(result.status, 0, result.stderr);
     assert.match(result.stdout, /Dry run/);
     assert.match(result.stdout, new RegExp(modsDir.replace(/\\/g, "\\\\")));
-    assert.equal(existsSync(join(modsDir, "Sims4_Eesti.package")), false);
+    assert.equal(existsSync(join(modsDir, ARTIFACT_NAME)), false, "the dry run installed nothing");
   });
 
   it("exits 3 when the destination is an unrelated file", () => {
     const modsDir = join(dir, "ModsForeign");
     mkdirSync(modsDir, { recursive: true });
-    writeFileSync(join(modsDir, "Sims4_Eesti.package"), "someone else's file");
+    writeFileSync(join(modsDir, ARTIFACT_NAME), "someone else's file");
 
     const result = run([
       "deploy",
@@ -230,6 +231,6 @@ describe("cli", () => {
     ]);
     assert.equal(result.status, 3);
     assert.match(result.stdout, /Refusing to overwrite/);
-    assert.equal(readFileSync(join(modsDir, "Sims4_Eesti.package"), "utf8"), "someone else's file");
+    assert.equal(readFileSync(join(modsDir, ARTIFACT_NAME), "utf8"), "someone else's file");
   });
 });
