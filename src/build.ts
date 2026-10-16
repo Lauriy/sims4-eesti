@@ -22,6 +22,7 @@ import {
   writeJsonAtomic,
   type Catalog,
   type CatalogOccurrence,
+  type SourceFacts,
 } from "./catalog.js";
 import { sha256Hex, sha256File } from "./hashing.js";
 import { formatTgi, hex8, localeByteOf, parseHex8, toTgi } from "./ids.js";
@@ -30,6 +31,7 @@ import {
   readStblTables,
   writePackageFile,
   type RawEntry,
+  type RawTable,
   type WrittenTable,
 } from "./package-io.js";
 import { parseStblBuffer } from "./stbl-format.js";
@@ -84,8 +86,10 @@ export interface EmittedResource {
 export interface BuildReport {
   outPath: string;
   manifestPath: string;
-  sourcePackagePath: string;
-  sourceSha256: string;
+  /** Every package the artifact drew on, with the fingerprint it was verified against. */
+  sourcePackages: { label: string; path: string; sha256: string }[];
+  /** Set only for single-package catalogs. */
+  sourceSha256: string | null;
   outputSha256: string;
   outputBytes: number;
   resources: EmittedResource[];
@@ -180,27 +184,46 @@ interface AppliedReplacement {
 
 export function buildPackage(options: BuildOptions): BuildReport {
   const catalog: Catalog = loadCatalog(options.catalogPath);
-  const sourcePackagePath = resolve(options.packagePath ?? catalog.source.path);
   const manifestPath = options.manifestPath ?? defaultManifestPath(options.outPath);
-  assertOutputIsSafe(options, sourcePackagePath, manifestPath);
 
-  // 1. The source package must be byte-identical to what the catalog was built
+  // A catalog may draw on many packages (Phase 2's install-wide scan). Sources are
+  // therefore resolved per package, and the single-package `--package` override is
+  // only meaningful when the catalog has exactly one.
+  const resolveSourcePath = (facts: { path: string }): string => {
+    if (!options.packagePath) return resolve(facts.path);
+    if (catalog.packages.length > 1) {
+      throw new BuildError(
+        `--package cannot be used with a catalog covering ${catalog.packages.length} packages; ` +
+          `it names one. Re-run "extract" or "scan" against the current files instead.`
+      );
+    }
+    return resolve(options.packagePath);
+  };
+  const firstSourcePath = resolveSourcePath(catalog.packages[0]!);
+  assertOutputIsSafe(options, firstSourcePath, manifestPath);
+
+  // 1. Every source package must be byte-identical to what the catalog was built
   //    from. Stale text or stale offsets are never applied.
-  if (!existsSync(sourcePackagePath)) {
-    throw new BuildError(
-      `Source package "${sourcePackagePath}" no longer exists. Re-run "extract" if it moved, or ` +
-        `pass --package with its new location.`
-    );
-  }
-  const sourceSha = sha256File(sourcePackagePath);
-  if (sourceSha !== catalog.source.sha256) {
-    throw new BuildError(
-      `Source package has changed since the catalog was extracted.\n` +
-        `  catalog: ${catalog.source.sha256}\n` +
-        `  file:    ${sourceSha}\n` +
-        `Refusing to build from a stale catalog. Re-run "extract" against the current file, then ` +
-        `re-check any translations it invalidates.`
-    );
+  const verified = new Map<string, SourceFacts>();
+  for (const facts of catalog.packages) {
+    const path = resolveSourcePath(facts);
+    if (!existsSync(path)) {
+      throw new BuildError(
+        `Source package "${path}" no longer exists. Re-run "extract"/"scan" if it moved, or pass ` +
+          `--package with its new location (single-package catalogs only).`
+      );
+    }
+    const actual = sha256File(path);
+    if (actual !== facts.sha256) {
+      throw new BuildError(
+        `Source package "${facts.label}" has changed since the catalog was written.\n` +
+          `  catalog: ${facts.sha256}\n` +
+          `  file:    ${actual}  (${path})\n` +
+          `Refusing to build from a stale catalog. Re-run "extract"/"scan" against the current ` +
+          `files, then re-check any translations it invalidates.`
+      );
+    }
+    verified.set(facts.label, { ...facts, path });
   }
 
   const translations = loadTranslations(options.translationsPath);
@@ -277,21 +300,46 @@ export function buildPackage(options: BuildOptions): BuildReport {
     );
   }
 
-  // 2. Re-read the source tables and replace only eligible entries.
-  const source = readStblTables(sourcePackagePath);
-  const sourceByTgi = new Map(source.tables.map((table) => [formatTgi(toTgi(table)), table]));
+  // 2. Re-read the source tables - from whichever package each resource lives in -
+  //    and replace only eligible entries.
+  const resourceByTgi = new Map(catalog.resources.map((resource) => [resource.tgi, resource]));
+  const tablesByTgi = new Map<string, { table: RawTable; label: string }>();
+  const packagesRead = new Set<string>();
+  for (const tgi of planned.keys()) {
+    const resource = resourceByTgi.get(tgi);
+    if (!resource) {
+      throw new BuildError(`Catalog inconsistency: ${tgi} has translations but no resource entry.`);
+    }
+    const facts = verified.get(resource.packageLabel);
+    if (!facts) {
+      throw new BuildError(
+        `Catalog inconsistency: ${tgi} names package "${resource.packageLabel}", which the catalog ` +
+          `does not list.`
+      );
+    }
+    if (packagesRead.has(facts.label)) continue;
+    packagesRead.add(facts.label);
+    for (const table of readStblTables(facts.path).tables) {
+      tablesByTgi.set(formatTgi(toTgi(table)), { table, label: facts.label });
+    }
+  }
+
+  const affectedTgis = [...planned.keys()].sort();
   const writtenTables: WrittenTable[] = [];
   const expectedTables = new Map<string, RawEntry[]>();
   const resourceReports: EmittedResource[] = [];
-  let resourcesSkipped = 0;
+  let resourcesSkipped = catalog.resources.length - affectedTgis.length;
 
-  for (const table of source.tables) {
-    const tgi = formatTgi(toTgi(table));
-    const replacements = planned.get(tgi);
-    if (!replacements) {
-      resourcesSkipped++;
-      continue;
+  for (const tgi of affectedTgis) {
+    const found = tablesByTgi.get(tgi);
+    if (!found) {
+      throw new BuildError(
+        `Catalog says ${tgi} exists, but re-reading its source package did not find it. ` +
+          `Re-run "extract"/"scan".`
+      );
     }
+    const { table, label: sourceLabel } = found;
+    const replacements = planned.get(tgi)!;
 
     const replacementByIndex = new Map<number, AppliedReplacement>();
     for (const replacement of replacements) {
@@ -328,7 +376,7 @@ export function buildPackage(options: BuildOptions): BuildReport {
     let replaced = 0;
     let reviewedReplaced = 0;
     let unreviewedReplaced = 0;
-    const entries: RawEntry[] = table.entries.map((entry, index) => {
+    const entries: RawEntry[] = table.entries.map((entry: RawEntry, index: number) => {
       const replacement = replacementByIndex.get(index);
       if (!replacement) return { key: entry.key, text: entry.text };
       replaced++;
@@ -367,8 +415,7 @@ export function buildPackage(options: BuildOptions): BuildReport {
   const manifest = buildManifest({
     options,
     catalog,
-    sourcePackagePath,
-    sourceSha,
+    sourcePackages: [...verified.values()],
     manifestPath,
     outputSha,
     outputBytes,
@@ -407,8 +454,8 @@ export function buildPackage(options: BuildOptions): BuildReport {
   return {
     outPath: resolve(options.outPath),
     manifestPath,
-    sourcePackagePath,
-    sourceSha256: sourceSha,
+    sourcePackages: [...verified.values()].map((facts) => ({ label: facts.label, path: facts.path, sha256: facts.sha256 })),
+    sourceSha256: catalog.packages.length === 1 ? catalog.packages[0]!.sha256 : null,
     outputSha256: outputSha,
     outputBytes,
     resources: resourceReports,
@@ -550,8 +597,7 @@ function readStblBytesForVerification(filePath: string): { tgi: string; buffer: 
 interface ManifestInput {
   options: BuildOptions;
   catalog: Catalog;
-  sourcePackagePath: string;
-  sourceSha: string;
+  sourcePackages: SourceFacts[];
   manifestPath: string;
   outputSha: string;
   outputBytes: number;
@@ -580,20 +626,30 @@ function buildManifest(input: ManifestInput): Record<string, unknown> {
       sha256: input.outputSha,
     },
     scope:
-      `Estonian text for the string tables of one supplied package ` +
-      `(${catalog.packLabel}, ${catalog.source.fileName}). This is not 100% of the base game and ` +
-      `not a complete localisation.`,
+      `Estonian text for the string tables of the supplied package(s) ` +
+      `(${input.sourcePackages.map((facts) => facts.label).join(", ")}). This is not 100% of the ` +
+      `base game and not a complete localisation of the game.`,
+    sources: input.sourcePackages.map((facts) => ({
+      label: facts.label,
+      path: facts.path,
+      fileName: facts.fileName,
+      sizeBytes: facts.sizeBytes,
+      sha256: facts.sha256,
+      stblResourceCount: facts.stblResourceCount,
+      stblEntryCount: facts.stblEntryCount,
+      dbpfVersion: facts.dbpfVersion,
+    })),
     source: {
-      path: input.sourcePackagePath,
-      fileName: catalog.source.fileName,
-      sizeBytes: catalog.source.sizeBytes,
-      sha256: input.sourceSha,
+      // Kept for readers of earlier manifests; the full list is `sources`.
+      path: input.sourcePackages.length === 1 ? input.sourcePackages[0]!.path : null,
+      fileName: input.sourcePackages.length === 1 ? input.sourcePackages[0]!.fileName : null,
+      sha256: input.sourcePackages.length === 1 ? input.sourcePackages[0]!.sha256 : null,
       packLabel: catalog.packLabel,
       catalogPath: resolve(options.catalogPath),
       catalogGeneratedAt: catalog.generatedAt,
-      stblResourceCount: catalog.source.stblResourceCount,
-      stblEntryCount: catalog.source.stblEntryCount,
-      dbpfVersion: catalog.source.dbpfVersion,
+      packageCount: input.sourcePackages.length,
+      stblResourceCount: catalog.packages.reduce((sum, facts) => sum + facts.stblResourceCount, 0),
+      stblEntryCount: catalog.packages.reduce((sum, facts) => sum + facts.stblEntryCount, 0),
     },
     gameVersion: options.gameVersion
       ? {

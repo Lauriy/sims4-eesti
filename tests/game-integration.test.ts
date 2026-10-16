@@ -118,8 +118,8 @@ describe("real English package", { skip }, () => {
         packLabel: "BASE",
         outDir: dir,
       });
-      assert.equal(result.catalog.source.sha256, sha256File(sourcePackage!));
-      assert.equal(result.catalog.occurrences.length, result.catalog.source.stblEntryCount);
+      assert.equal(result.catalog.packages[0]!.sha256, sha256File(sourcePackage!));
+      assert.equal(result.catalog.occurrences.length, result.catalog.packages[0]!.stblEntryCount);
       assert.ok(
         result.catalog.warnings.length === 0 ||
           result.catalog.warnings.every((warning) => typeof warning === "string")
@@ -127,10 +127,10 @@ describe("real English package", { skip }, () => {
       const manifest = JSON.parse(readFileSync(result.manifestPath, "utf8")) as {
         source: { sha256: string };
       };
-      assert.equal(manifest.source.sha256, result.catalog.source.sha256);
+      assert.equal(manifest.source.sha256, result.catalog.packages[0]!.sha256);
       console.log(
         `  catalog: ${result.catalog.occurrences.length} occurrences, ` +
-          `${result.catalog.warnings.length} warning(s), fingerprint ${result.catalog.source.sha256.slice(0, 16)}…`
+          `${result.catalog.warnings.length} warning(s), fingerprint ${result.catalog.packages[0]!.sha256.slice(0, 16)}…`
       );
     } finally {
       rmSync(dir, { recursive: true, force: true });

@@ -21,11 +21,13 @@ import {
 import { readRawStblBuffers, readStblTables, type DbpfHeaderSummary } from "./package-io.js";
 import { parseStblBuffer, type StblHeader } from "./stbl-format.js";
 
-export const CATALOG_SCHEMA_VERSION = 1;
+export const CATALOG_SCHEMA_VERSION = 2;
 export const TOOL_NAME = "sims4-eesti";
 export const TOOL_VERSION = "0.1.0";
 
 export interface SourceFacts {
+  /** Label used in occurrence IDs; unique within a catalog. */
+  label: string;
   /** Absolute path as resolved when the catalog was written. */
   path: string;
   fileName: string;
@@ -40,6 +42,8 @@ export interface SourceFacts {
 export interface CatalogOccurrence {
   occurrenceId: string;
   resourceTgi: string;
+  /** Which package this string came from (matches SourceFacts.label). */
+  packageLabel: string;
   stringKey: string;
   /** Position within its table, used as a cross-check when applying text. */
   entryIndex: number;
@@ -52,6 +56,10 @@ export interface CatalogOccurrence {
 
 export interface CatalogResource {
   tgi: string;
+  /** Which package holds this resource (matches SourceFacts.label). */
+  packageLabel: string;
+  /** Path of that package, relative to the game root for install catalogs. */
+  packagePath: string;
   type: string;
   group: string;
   instance: string;
@@ -69,7 +77,8 @@ export interface Catalog {
   tool: { name: string; version: string };
   generatedAt: string;
   packLabel: string;
-  source: SourceFacts;
+  /** Every package this catalog draws on. One entry for a single-package extraction. */
+  packages: SourceFacts[];
   resources: CatalogResource[];
   occurrences: CatalogOccurrence[];
   warnings: string[];
@@ -119,15 +128,41 @@ export interface SearchOptions {
 }
 
 export function loadCatalog(catalogPath: string): Catalog {
-  const parsed = JSON.parse(readTextFile(catalogPath)) as Catalog;
+  const parsed = JSON.parse(readTextFile(catalogPath)) as Catalog & {
+    source?: SourceFacts;
+    packages?: SourceFacts[];
+  };
+  if (parsed.schemaVersion === 1 && parsed.source) {
+    // Version 1 catalogs described exactly one package. Lift them into the
+    // multi-package shape rather than refusing to read them: occurrence IDs do
+    // not change, so every translation stays valid.
+    const source = { ...parsed.source, label: parsed.source.label ?? "BASE" };
+    return {
+      ...parsed,
+      schemaVersion: CATALOG_SCHEMA_VERSION,
+      packages: [source],
+      resources: parsed.resources.map((resource) => ({
+        ...resource,
+        packageLabel: resource.packageLabel ?? source.label,
+        packagePath: resource.packagePath ?? source.path,
+      })),
+      occurrences: parsed.occurrences.map((occurrence) => ({
+        ...occurrence,
+        packageLabel: occurrence.packageLabel ?? source.label,
+      })),
+    };
+  }
   if (parsed.schemaVersion !== CATALOG_SCHEMA_VERSION) {
     throw new Error(
       `Catalog "${catalogPath}" has schema version ${parsed.schemaVersion}; this build of the tool ` +
-        `writes version ${CATALOG_SCHEMA_VERSION}. Re-run "extract".`
+        `writes version ${CATALOG_SCHEMA_VERSION}. Re-run "extract" or "scan".`
     );
   }
   if (!Array.isArray(parsed.occurrences) || !Array.isArray(parsed.resources)) {
     throw new Error(`Catalog "${catalogPath}" is missing its resource or occurrence list.`);
+  }
+  if (!Array.isArray(parsed.packages) || parsed.packages.length === 0) {
+    throw new Error(`Catalog "${catalogPath}" lists no source packages.`);
   }
   return parsed;
 }
@@ -284,6 +319,8 @@ export function extractCatalog(options: ExtractOptions): ExtractResult {
 
     resources.push({
       tgi: tgiText,
+      packageLabel: options.packLabel,
+      packagePath,
       type: tgi.type,
       group: tgi.group,
       instance: tgi.instance,
@@ -300,6 +337,7 @@ export function extractCatalog(options: ExtractOptions): ExtractResult {
       occurrences.push({
         occurrenceId: formatOccurrenceId(options.packLabel, tgi, stringKey),
         resourceTgi: tgiText,
+        packageLabel: options.packLabel,
         stringKey,
         entryIndex,
         sourceText: entry.text,
@@ -310,6 +348,7 @@ export function extractCatalog(options: ExtractOptions): ExtractResult {
   }
 
   const source: SourceFacts = {
+    label: options.packLabel,
     path: packagePath,
     fileName: basename(packagePath),
     sizeBytes: statSync(packagePath).size,
@@ -325,7 +364,7 @@ export function extractCatalog(options: ExtractOptions): ExtractResult {
     tool: { name: TOOL_NAME, version: TOOL_VERSION },
     generatedAt,
     packLabel: options.packLabel,
-    source,
+    packages: [source],
     resources,
     occurrences,
     warnings,

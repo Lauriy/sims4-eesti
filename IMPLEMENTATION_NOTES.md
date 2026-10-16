@@ -294,6 +294,42 @@ Also learned from the trial: the Mods folder does take precedence for this
 resource (the game ships its own copy of the table we override, and our text is
 what appears).
 
+
+## Strings per locale: why mods look larger than the game
+
+Measured 2026-10-16, prompted by a fair question ("how can mods have more strings
+than the whole base game?"). They do not. A mod ships its text once **per locale**
+in a single package:
+
+| Package | Tables | Entries | Distinct texts | Locales |
+| --- | --- | --- | --- | --- |
+| `TURBODRIVER_WickedWhims_Tuning.package` | 110 | 139,788 | 6,187 | 22 (each locale: 6,354 entries in 5 tables) |
+| `Data\Client\Strings_ENG_US.package` (base game) | 1 | 58,374 | 58,374 | 1 (English only, by definition of the file) |
+
+So "383,473 strings in my mods" was an all-locales figure compared against the
+base game's English-only file — apples to oranges. Counting only locale `00`
+(English, which is what a game running in English reads):
+
+| Source | English strings |
+| --- | --- |
+| Base game | 58,374 |
+| Three stuff packs (SP06, SP08, SP14) | 688 |
+| Installed mods (89 packages, 111 tables) | 16,278 — of which WickedWhims ~6,354, Basemental Drugs 4,831, MC Command Center 3,201, and ~86 item mods of 1–3 strings each |
+
+Consequences:
+
+1. The scan reads English tables only by default (`--include-non-english` to
+   override). Reading all 22 locales would inflate a catalog ~22x with text the
+   game never shows.
+2. "Translate everything" is therefore a corpus of roughly **75,000 strings**, not
+   440,000 — still a pipeline job rather than a session's, but a tractable one.
+3. The size heuristic that skips large packages **is only valid for a game
+   installation**. A Mods folder is the opposite case: the largest packages are
+   exactly the ones with text (WickedWhims is 136 MiB). The scan now applies the
+   rule only when the root looks like an installation, and `--large-file-mb 0`
+   disables it anywhere. This was caught by rescanning after the fix and noticing
+   the numbers had not moved — the CLI had been overriding the default.
+
 ## Known limitations and open questions
 
 1. **Not run in game.** The manual gate in `README.md` is unexecuted. Nothing here

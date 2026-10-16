@@ -320,7 +320,7 @@ describe("stale and unsafe inputs", () => {
     assert.throws(
       () => buildTo("from-changed.package", { packagePath: changed }),
       (error: Error) =>
-        error instanceof BuildError && /changed since the catalog was extracted/.test(error.message)
+        error instanceof BuildError && /changed since the catalog was written/.test(error.message)
     );
   });
 

@@ -9,6 +9,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { buildPackage, defaultManifestPath, BuildError } from "./build.js";
 import { extractCatalog, loadCatalog, searchCatalog } from "./catalog.js";
+import { coverageByPackage, scanInstallation } from "./scan.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -42,6 +43,8 @@ Usage: npm run cli -- <command> [options]
 
 Commands:
   extract   Read one English .package and write a catalog of its strings
+  scan      Find every string table installed and catalog them all at once
+  coverage  Report how many strings each package contributes
   search    Find English strings in a catalog and print their occurrence IDs
   set       Record an Estonian translation for one occurrence ID
   build     Write a package containing the validated translations
@@ -113,6 +116,31 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       },
       translations: { help: "Translations file to update" },
       metadata: { help: "Metadata file to update" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  scan: {
+    summary: "Find every string table the game has installed and catalog them all",
+    flags: {
+      "game-root": { help: "The Sims 4 installation folder (required)" },
+      out: { help: "Directory for install-index.json and catalog.json (required)" },
+      "large-file-mb": {
+        help:
+          "Skip packages at least this large unless named like strings; 0 disables. " +
+          "Default: 50 for a game installation, 0 elsewhere (a Mods folder needs 0)",
+      },
+      "include-delta": { boolean: true, help: "Read Delta (SDX) files too; precedence is unsettled" },
+      "include-non-english": {
+        boolean: true,
+        help: "Read tables for languages other than English (a mod repeats its text per locale)",
+      },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  coverage: {
+    summary: "Report how many strings each package contributes",
+    flags: {
+      catalog: { help: "Path to a catalog.json from extract or scan" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -274,14 +302,15 @@ function runExtract(parsed: ParsedArgs, config: Config): number {
   const result = extractCatalog({ packagePath, packLabel, outDir });
   const { catalog } = result;
 
-  console.log(`Read ${catalog.source.fileName}`);
-  console.log(`  path          ${catalog.source.path}`);
-  console.log(`  size          ${formatBytes(catalog.source.sizeBytes)}`);
-  console.log(`  sha256        ${catalog.source.sha256}`);
-  console.log(`  dbpf version  ${catalog.source.dbpfVersion}`);
+  const source = catalog.packages[0]!;
+  console.log(`Read ${source.fileName}`);
+  console.log(`  path          ${source.path}`);
+  console.log(`  size          ${formatBytes(source.sizeBytes)}`);
+  console.log(`  sha256        ${source.sha256}`);
+  console.log(`  dbpf version  ${source.dbpfVersion}`);
   console.log(
-    `  resources     ${catalog.source.resourceCount} total, ` +
-      `${catalog.source.stblResourceCount} string table(s), ${catalog.source.stblEntryCount} strings`
+    `  resources     ${source.resourceCount} total, ` +
+      `${source.stblResourceCount} string table(s), ${source.stblEntryCount} strings`
   );
   for (const resource of catalog.resources) {
     console.log(
@@ -298,6 +327,82 @@ function runExtract(parsed: ParsedArgs, config: Config): number {
   console.log(
     `\nNext: npm run cli -- search --catalog "${result.catalogPath}" --text "<a word you expect to see in game>"`
   );
+  return EXIT_OK;
+}
+
+function runScan(parsed: ParsedArgs, config: Config): number {
+  const gameRoot = required(parsed, "game-root");
+  const outDir = resolve(required(parsed, "out"));
+  // Only pass a size rule when the user asked for one: scanInstallation picks the
+  // right default for the root it is given (a game installation can skip large
+  // files, a Mods folder must not - that is where the big text packages live).
+  const largeFileMbRaw = parsed.values.get("large-file-mb");
+  let largeFileBytes: number | undefined;
+  if (largeFileMbRaw !== undefined) {
+    const largeFileMb = Number(largeFileMbRaw);
+    if (!Number.isFinite(largeFileMb) || largeFileMb < 0) {
+      throw new UsageError("--large-file-mb must be zero or a positive number (0 disables the rule).");
+    }
+    largeFileBytes = largeFileMb * 1024 * 1024;
+  }
+
+  const result = scanInstallation({
+    gameRoot,
+    outDir,
+    ...(largeFileBytes !== undefined ? { largeFileBytes } : {}),
+    includeDelta: parsed.booleans.has("include-delta"),
+    includeNonEnglish: parsed.booleans.has("include-non-english"),
+    onProgress: (message) => console.log(message),
+  });
+
+  const { index } = result;
+  console.log("");
+  console.log(`Scanned ${index.gameRoot}`);
+  console.log(`  packages found   ${index.totals.packagesFound}`);
+  console.log(`  read             ${index.totals.packagesRead}`);
+  console.log(`  string tables    ${index.totals.tables}`);
+  console.log(`  strings          ${index.totals.entries}`);
+  for (const [disposition, count] of Object.entries(index.totals.byDisposition).sort()) {
+    if (disposition === "read") continue;
+    console.log(`  ${disposition.padEnd(17)}${count}`);
+  }
+  if (index.totals.nonEnglishTablesSkipped > 0) {
+    console.log(`  non-English tables skipped: ${index.totals.nonEnglishTablesSkipped}`);
+  }
+  console.log("");
+  for (const row of coverageByPackage(result.catalog)) {
+    console.log(
+      `  ${row.label.padEnd(28)} ${String(row.entries).padStart(7)} strings in ` +
+        `${String(row.tables).padStart(3)} table(s)${row.ambiguous > 0 ? `, ${row.ambiguous} ambiguous` : ""}`
+    );
+  }
+  console.log(`
+Wrote ${result.catalogPath}`);
+  console.log(`Wrote ${result.indexPath}`);
+  console.log(
+    `
+Next: npm run cli -- build --catalog "${result.catalogPath}" --out dist/Sims4_Eesti.package --include-unreviewed`
+  );
+  return EXIT_OK;
+}
+
+function runCoverage(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const catalog = loadCatalog(catalogPath);
+  const rows = coverageByPackage(catalog);
+  console.log(`Catalog ${catalogPath}`);
+  console.log(`  packages   ${catalog.packages.length}`);
+  console.log(`  tables     ${catalog.resources.length}`);
+  console.log(`  strings    ${catalog.occurrences.length}`);
+  console.log("");
+  let total = 0;
+  for (const row of rows) {
+    total += row.entries;
+    console.log(
+      `  ${row.label.padEnd(28)} ${String(row.entries).padStart(7)} strings  ${row.path}`
+    );
+  }
+  console.log(`  ${"total".padEnd(28)} ${String(total).padStart(7)} strings`);
   return EXIT_OK;
 }
 
@@ -427,8 +532,10 @@ function runBuild(parsed: ParsedArgs, config: Config): number {
   console.log(`  size        ${formatBytes(report.outputBytes)}`);
   console.log(`  sha256      ${report.outputSha256}`);
   console.log(`  manifest    ${report.manifestPath}`);
-  console.log(`  source      ${report.sourcePackagePath}`);
-  console.log(`  source sha  ${report.sourceSha256}`);
+  for (const facts of report.sourcePackages) {
+    console.log(`  source      ${facts.label}: ${facts.path}`);
+    console.log(`  source sha  ${facts.sha256}`);
+  }
   console.log("");
   for (const resource of report.resources) {
     console.log(
@@ -537,6 +644,10 @@ function main(argv: string[]): number {
   switch (command) {
     case "extract":
       return runExtract(parsed, config);
+    case "scan":
+      return runScan(parsed, config);
+    case "coverage":
+      return runCoverage(parsed, config);
     case "search":
       return runSearch(parsed, config);
     case "set":
