@@ -444,6 +444,15 @@
         "armatsemis-"
       ],
       "note": "the project owner's choice, 2026-10-17, over Vuhuu/Armumängud/Vehtle; a real word rather than slang, and it inflects in sentences (164 base-game strings still to translate use it). 'Mess Around' is the milder variant the player can switch on and stays a separate term."
+    },
+    {
+      "en": "Flirt",
+      "et": "Flirdi",
+      "accept": [
+        "flirdi",
+        "flirtimine"
+      ],
+      "note": "the owner's choice, 2026-10-17: Flirdi. The verb is flirtima and the action noun flirtimine (cf. Kiss -> Suudlemine) if the family style is wanted later. It was briefly 'Flirttaile', which is the Finnish word."
     }
   ],
   "style": [
