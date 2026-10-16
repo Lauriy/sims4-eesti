@@ -108,6 +108,11 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
 - Keep the built package private pending a distribution review; it contains the
   English fallback text of the overridden table.
 
+Shell scripts (`githooks/*`, `*.sh`) must keep LF endings. `.gitattributes`
+pins that inside git, but editors on Windows write CRLF into the worktree — check
+with `git ls-files --eol <path>` after editing one, and normalise if it shows
+`w/crlf`.
+
 ## Layout and build strategy
 
 `src/cli.ts` (commands) · `package-io.ts` (library adapter) · `catalog.ts`
