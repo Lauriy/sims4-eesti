@@ -5165,8 +5165,9 @@
     "BASE|220557DA:00000000:0054935F2685AD48|3E20B70E": {
       "state": "machine",
       "sourceHash": "23a27e1f697f781c06b865012ce1a9e612313f220f9fdc7caad4597cc6375717",
-      "updatedAt": "2026-10-16T21:25:20.429Z",
-      "origin": "machine"
+      "updatedAt": "2026-10-16T21:50:38.444Z",
+      "origin": "machine",
+      "note": "was Flirttaile, copied from the Finnish flirttailla - not an Estonian word; flirtima -> imperative flirta"
     },
     "BASE|220557DA:00000000:0054935F2685AD48|3E47C56F": {
       "state": "machine",
@@ -6635,8 +6636,9 @@
     "BASE|220557DA:00000000:0054935F2685AD48|4FED48C7": {
       "state": "machine",
       "sourceHash": "23a27e1f697f781c06b865012ce1a9e612313f220f9fdc7caad4597cc6375717",
-      "updatedAt": "2026-10-16T21:25:20.429Z",
-      "origin": "machine"
+      "updatedAt": "2026-10-16T21:50:32.948Z",
+      "origin": "machine",
+      "note": "was Flirttaile, copied from the Finnish flirttailla - not an Estonian word; flirtima -> imperative flirta"
     },
     "BASE|220557DA:00000000:0054935F2685AD48|5006B4ED": {
       "state": "machine",
@@ -6671,8 +6673,9 @@
     "BASE|220557DA:00000000:0054935F2685AD48|504AA260": {
       "state": "machine",
       "sourceHash": "23a27e1f697f781c06b865012ce1a9e612313f220f9fdc7caad4597cc6375717",
-      "updatedAt": "2026-10-16T21:25:20.429Z",
-      "origin": "machine"
+      "updatedAt": "2026-10-16T21:50:28.737Z",
+      "origin": "machine",
+      "note": "was Flirttaile, copied from the Finnish flirttailla - not an Estonian word; flirtima -> imperative flirta"
     },
     "BASE|220557DA:00000000:0054935F2685AD48|50508210": {
       "state": "machine",

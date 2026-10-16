@@ -66,7 +66,14 @@ Last, for three measured reasons and one honest non-reason:
 
 ```powershell
 npm run cli -- glossary-check --catalog work/beta-catalog.json --translations translations/et-EE.json
+npm run cli -- lint --catalog work/beta-catalog.json --translations translations/et-EE.json --references work/reference-fi
 ```
+
+`lint` exists because a playtest found "Flirttaile" for the Flirt interaction,
+which is the Finnish word copied whole from the reference. It looks for word
+endings Estonian does not build (-ailla, -aile, -inen, -ssa, -minen, -matta) and
+marks any hit that also appears in the Finnish of the same key. On the 4,043
+translated strings: 3 hits, all the same real defect, no false positives.
 
 Then the two reports used on the trial's output: same English text with more than
 one Estonian rendering, and new translations that contradict something already

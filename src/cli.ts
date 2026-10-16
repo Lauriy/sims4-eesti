@@ -14,6 +14,8 @@ import { exportBatches, importTranslations, translationStats } from "./translate
 import { mergeCatalogs } from "./merge.js";
 import { checkGlossary, loadGlossary, mergeTermReports } from "./glossary.js";
 import { occurrenceIdsOf, rankStrings } from "./rank.js";
+import { findForeignForms } from "./lint.js";
+import { loadReferenceFiles } from "./references.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -210,6 +212,18 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       },
       translations: { help: "Translations file to update" },
       metadata: { help: "Metadata file to update" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  lint: {
+    summary: "Find Estonian carrying forms Estonian does not build (e.g. copied Finnish)",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      translations: { help: "Translations file to check" },
+      references: {
+        help: "Reference packages, comma-separated (e.g. work/reference-fi): a hit that also appears there is marked as copied",
+      },
+      limit: { help: "Show at most this many findings (default 40)" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -633,6 +647,44 @@ function runTranslateImport(parsed: ParsedArgs, config: Config): number {
       console.log(`    e.g. ${rejection.occurrenceId} — ${rejection.reasons[0]!.message}`);
     }
   }
+  return EXIT_OK;
+}
+
+function runLint(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const limit = Number(parsed.values.get("limit") ?? 40);
+  const catalog = loadCatalog(catalogPath);
+  const translations = loadTranslations(translationsPath);
+
+  const referencePaths = (parsed.values.get("references") ?? "")
+    .split(",")
+    .map((item) => resolve(item.trim()))
+    .filter(Boolean);
+  let reference: Map<string, string> | undefined;
+  if (referencePaths.length > 0) {
+    const englishByKey = new Map<string, string>();
+    for (const occurrence of catalog.occurrences) {
+      if (!englishByKey.has(occurrence.stringKey)) englishByKey.set(occurrence.stringKey, occurrence.sourceText);
+    }
+    reference = loadReferenceFiles(referencePaths, englishByKey).byLocale.get("fi");
+  }
+
+  const { checked, findings } = findForeignForms(catalog.occurrences, translations, reference);
+  console.log(`Checked ${checked} translation(s): ${findings.length} carry a form Estonian does not build
+`);
+  for (const finding of findings.slice(0, limit)) {
+    console.log(`${finding.inReference ? "COPIED FROM THE REFERENCE " : ""}${finding.form}  (${finding.note})`);
+    console.log(`    en ${JSON.stringify(finding.english.slice(0, 60))}`);
+    console.log(`    et ${JSON.stringify(finding.estonian.slice(0, 60))}`);
+    console.log(`       ${finding.occurrenceId}`);
+  }
+  if (findings.length > limit) console.log(`(${findings.length - limit} more not shown; raise --limit)`);
+  console.log(
+    `
+These are reports, not verdicts: Estonian has borrowed from Finnish for centuries, ` +
+      `and a reader decides. Fix the offender with "set".`
+  );
   return EXIT_OK;
 }
 
@@ -1077,6 +1129,8 @@ function main(argv: string[]): number {
       return runTranslateImport(parsed, config);
     case "rank":
       return runRank(parsed, config);
+    case "lint":
+      return runLint(parsed, config);
     case "glossary-check":
       return runGlossaryCheck(parsed, config);
     case "glossary-merge":

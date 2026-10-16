@@ -124,7 +124,28 @@ for a day after it had been.
 doc are read by every agent afterwards, and they either repeat the falsehood or
 learn to distrust the true parts.
 
-## 9. Working habits that cost real time here
+## 9. A guard has to be tested against the defect that motivated it
+
+A playtest found `Flirttaile` for the Flirt interaction. It is the Finnish word:
+EA's Finnish says `Flirttaile` for the same key, and a translator handed the
+reference gave it back unchanged. `flirttailla` is a Finnish verb; Estonian has
+`flirtima`, imperative `flirta`.
+
+The lint written for it was wrong on the first pass. The ending list was
+transcribed from a scratch script and `-aile` was dropped on the way, so the
+module did not fire on the very string it was built for - and running it on the
+cleaned data reported "0 findings", which looked like a pass and was nothing at
+all. A self-test with the original defect in it caught the dead guard in one run.
+On the real 4,043 strings it then found 3 instances, every one copied from the
+reference, and no false positives.
+
+The same detector built the other way round - "a word used once that also appears
+in the Finnish" - found three strings and all three were innocent Estonian
+loanwords (`teline`, `kitara`, `fantasia`), while missing the actual defect, which
+appears three times. **The detector that looks principled can be worse than the
+one that encodes the actual failure.**
+
+## 10. Working habits that cost real time here
 
 - **Write code containing backslashes through files, not shell heredocs.** Git
   Bash halved `\\` to `\` repeatedly, corrupting regexes, string literals and one
