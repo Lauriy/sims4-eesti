@@ -454,3 +454,33 @@ installation-wide catalog, source diffing and bulk translation pipeline are buil
 what remains of it is the review loop and the community side. See
 `Sims4_Eesti_Implementation_Brief.md`, `PHASE2_DESIGN.md` and
 `IMPLEMENTATION_NOTES.md`.
+
+---
+
+## Footnote: who wrote this
+
+Everything here — the tool in `src/`, the tests, the Estonian text, the probe
+kits, and these documents — was produced by an AI agent in sessions on
+2026-10-16 and 2026-10-17: **DeepSeek 4.1 Flash** (the model this session's
+environment reports as `deepseek-flash[1m]`), driving the Claude Code harness.
+A model cannot verify its own identity from the inside, so that is recorded as
+the person who ran the sessions states it and as the environment reports it —
+not as something the agent observed. The batch translations come from subagents
+of the same sessions.
+
+The person in the loop is Lauri. He commissioned the implementation brief — which
+Codex wrote — set the constraints the work runs under (game installation and
+saves read-only, no invented results, no secrets in git), chose what to build at
+each step, and was the hands for everything that needed a human present: running
+the game and its probes, reading the screens, switching Steam to Finnish so the
+agent could read EA's own translation of all 58,374 strings, and supplying the
+paths and credentials. The commits carry his git identity because they were made
+from his machine; the text inside them was not written by him.
+
+Two files predate or sit outside that authorship: `Sims4_Eesti_Implementation_Brief.md`
+is Codex's, and `agents/shared/lauri/` holds Lauri's own machine-wide rules,
+copied in so every contributor's tooling loads them.
+
+Nothing in this repository has been reviewed by a human translator. The
+`reviewed` state exists for that review to be recorded in — today every entry is
+`machine`, and the manifest says so.
