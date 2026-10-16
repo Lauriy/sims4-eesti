@@ -402,6 +402,38 @@
       "exclude": "home (in|to|of|for|from|is|lot|world)|come home|go home|at home|(my|your|their|his|her|its) home",
       "note": "the navigation tab is 'Avaleht'; everywhere else home is the Sim's 'kodu'",
       "ambiguous": true
+    },
+    {
+      "en": "Expansion Packs",
+      "et": "Laienduspaketid",
+      "accept": [
+        "laienduspaketid"
+      ],
+      "note": "the pack-selection screen; the family is Mängupaketid / Laienduspaketid / Väikepaketid / Komplektid"
+    },
+    {
+      "en": "Game Packs",
+      "et": "Mängupaketid",
+      "accept": [
+        "mängupaketid"
+      ],
+      "note": "see Expansion Packs"
+    },
+    {
+      "en": "Stuff Packs",
+      "et": "Väikepaketid",
+      "accept": [
+        "väikepaketid"
+      ],
+      "note": "see Expansion Packs; two of three keys already read this way, the third said Asjapaketid and was standardised"
+    },
+    {
+      "en": "Kits",
+      "et": "Komplektid",
+      "accept": [
+        "komplektid"
+      ],
+      "note": "the small packs; see Expansion Packs"
     }
   ],
   "style": [

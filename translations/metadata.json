@@ -19409,8 +19409,9 @@
     "BASE|220557DA:00000000:0054935F2685AD48|F0DDBFD1": {
       "state": "machine",
       "sourceHash": "c3b646458cc359809b0531dd146d7d4cc225a40c53f18969047fabb9296ff26a",
-      "updatedAt": "2026-10-16T21:25:20.423Z",
-      "origin": "machine"
+      "updatedAt": "2026-10-16T21:31:13.498Z",
+      "origin": "machine",
+      "note": "standardised on the pack-selection screen's rendering (Väikepaketid, next to Mängupaketid/Laienduspaketid); the other key had Asjapaketid"
     },
     "BASE|220557DA:00000000:0054935F2685AD48|F0FD06F2": {
       "state": "machine",

@@ -16,7 +16,14 @@
  */
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { TOOL_NAME, TOOL_VERSION, loadCatalog, writeJsonAtomic, type Catalog } from "./catalog.js";
+import {
+  TOOL_NAME,
+  TOOL_VERSION,
+  loadCatalog,
+  writeJsonAtomic,
+  type Catalog,
+  type CatalogOccurrence,
+} from "./catalog.js";
 import { flatten, loadReferenceFiles, referencesFromPackage } from "./references.js";
 import { glossaryForPrompt, loadGlossary } from "./glossary.js";
 import {
@@ -85,6 +92,8 @@ export interface ExportOptions {
   excludePackages?: string[];
   /** Restrict to these occurrence IDs - e.g. the priority list `rank` writes. */
   ids?: string[];
+  /** One entry per distinct text; the other keys travel in `alsoAt`. */
+  dedupeTexts?: boolean;
   /** Directories or files holding reference translations (e.g. work/reference-fi). */
   referenceDirs?: string[];
   /** How many reference languages to show per entry (default 3). */
@@ -95,7 +104,10 @@ export interface ExportOptions {
 
 export interface ExportResult {
   batchPaths: string[];
+  /** Entries in the batches. With `dedupeTexts` this is fewer than the keys covered. */
   totalStrings: number;
+  /** Occurrences the entries stand for, when texts were deduplicated. */
+  coveredKeys?: number;
   perPackage: Record<string, number>;
   /** Strings with gender branches or markup: left English on purpose, not exported. */
   deferredCount: number;
@@ -289,10 +301,51 @@ export function exportBatches(options: ExportOptions): ExportResult {
   // Strings this pipeline cannot carry - gender branches, markup - are left out of
   // the batches rather than translated and then refused at import: the outcome is
   // the same (they stay English) and it saves the work.
-  const deferred = limited.filter((occurrence) => analyzeSyntax(occurrence.sourceText).problem !== undefined);
-  const translatable = limited.filter((occurrence) => analyzeSyntax(occurrence.sourceText).problem === undefined);
+  // Strings that are nothing but placeholders or codes - `{0.SimFirstName}`,
+  // `{0.String}{1.String}` - have no English to translate; 403 of the remaining
+  // ones are like this, and a translator who sends anything back is refused as
+  // identical-to-source at best. They are reported with the deferred rather than
+  // spending a batch slot.
+  const hasWords = (text: string) =>
+    /\p{L}/u.test(text.replace(/\{[^{}]*\}/g, "").replace(/\\[A-Za-z]/g, "").replace(/\[[^\[\]]*\]/g, ""));
+  const deferred = limited.filter(
+    (occurrence) =>
+      analyzeSyntax(occurrence.sourceText).problem !== undefined || !hasWords(occurrence.sourceText)
+  );
+  const translatable = limited.filter(
+    (occurrence) =>
+      analyzeSyntax(occurrence.sourceText).problem === undefined && hasWords(occurrence.sourceText)
+  );
+
+  // One entry per distinct text, carrying the other keys it covers.
+  //
+  // Measured over what is left: 4,408 texts appear at more than one key, covering
+  // 10,043 occurrences - about 14% of the remaining volume. Exported per key they
+  // land in different batches, get translated independently, and drift: "Stuff
+  // Packs" came back as both "Komplektid" and "Asjapaketid" that way. The keys are
+  // not always interchangeable ("Kids" is a radio station and a build category),
+  // so this is a default, and a translator who needs a different wording for one
+  // key says so in `batch-NNN.overrides.json` rather than being overruled.
+  const alsoAt = new Map<string, string[]>();
+  const toExport = (() => {
+    if (!options.dedupeTexts) return translatable;
+    const byText = new Map<string, typeof translatable>();
+    for (const occurrence of translatable) {
+      const list = byText.get(occurrence.sourceText) ?? [];
+      list.push(occurrence);
+      byText.set(occurrence.sourceText, list);
+    }
+    const keep: typeof translatable = [];
+    for (const group of byText.values()) {
+      const [first, ...rest] = group;
+      if (first === undefined) continue;
+      if (rest.length > 0) alsoAt.set(first.occurrenceId, rest.map((occurrence) => occurrence.occurrenceId));
+      keep.push(first);
+    }
+    return keep;
+  })();
   const perPackage: Record<string, number> = {};
-  for (const occurrence of translatable) {
+  for (const occurrence of toExport) {
     perPackage[occurrence.packageLabel] = (perPackage[occurrence.packageLabel] ?? 0) + 1;
   }
   mkdirSync(options.outDir, { recursive: true });
@@ -300,8 +353,8 @@ export function exportBatches(options: ExportOptions): ExportResult {
   const batchPaths: string[] = [];
   const glossary = loadGlossary(options.glossaryPath ?? "glossary.json");
 
-  for (let offset = 0; offset < translatable.length; offset += batchSize) {
-    const slice = translatable.slice(offset, offset + batchSize);
+  for (let offset = 0; offset < toExport.length; offset += batchSize) {
+    const slice = toExport.slice(offset, offset + batchSize);
     const index = Math.floor(offset / batchSize) + 1;
 
     const batch: BatchFile = {
@@ -348,9 +401,11 @@ export function exportBatches(options: ExportOptions): ExportResult {
           short ? 12 : 2
         ).map((item) => ({ en: item.text, et: item.et }));
 
+        const others = alsoAt.get(occurrence.occurrenceId);
         return {
           occurrenceId: occurrence.occurrenceId,
           sourceText: occurrence.sourceText,
+          ...(others ? { alsoAt: others } : {}),
           context: {
             package: occurrence.packageLabel,
             kind: where.kind,
@@ -372,11 +427,18 @@ export function exportBatches(options: ExportOptions): ExportResult {
 
   const instructions = `# Translation batches
 
-${batchPaths.length} batch file(s), ${translatable.length} strings, target locale et-EE.
+${batchPaths.length} batch file(s), ${toExport.length} entries${options.dedupeTexts ? ` covering ${translatable.length} keys of the game` : ""}, target locale et-EE.
 
 For each batch file, produce a file next to it named \`batch-NNN.translated.json\`
 containing a single JSON object that maps every \`occurrenceId\` in the batch to its
 Estonian text. Nothing else: no wrapper object, no comments, no markdown fences.
+
+Some entries carry an \`alsoAt\` list: the same English text appears at those other
+keys, and your translation will be applied to all of them, so translate it once.
+If one of those keys needs a different wording - the same English word can be a
+radio station and a build category - put it in a file named
+\`batch-NNN.overrides.json\` next to your answer, as \`{"<occurrence id>": "<text>"}\`.
+It is applied after the shared text and wins.
 
 Rules that the import step enforces (a violating entry is rejected, not repaired):
 
@@ -392,7 +454,8 @@ npm run cli -- translate import --catalog ${options.catalogPath} --in ${options.
 
   return {
     batchPaths,
-    totalStrings: translatable.length,
+    totalStrings: toExport.length,
+    ...(options.dedupeTexts ? { coveredKeys: translatable.length } : {}),
     perPackage,
     deferredCount: deferred.length,
     referenceSources: Object.fromEntries(fileReferences.sources),
@@ -416,6 +479,10 @@ export interface ImportResult {
   filesRead: number;
   entriesSeen: number;
   applied: number;
+  /** Keys written from this same English text under another key's translation. */
+  propagated: number;
+  /** Keys a translator gave a different wording, from `batch-NNN.overrides.json`. */
+  overridden: number;
   rejected: { occurrenceId: string; reasons: ValidationIssue[] }[];
   unknownIds: string[];
   skippedReviewed: string[];
@@ -440,6 +507,34 @@ function collectJsonFiles(inputs: string[]): string[] {
   return files.sort();
 }
 
+/** The batch files themselves, which carry the `alsoAt` mapping. */
+function collectBatchFiles(inputs: string[]): string[] {
+  const files: string[] = [];
+  for (const input of inputs) {
+    if (!existsSync(input) || !statSync(input).isDirectory()) continue;
+    for (const entry of readdirSync(input, { withFileTypes: true })) {
+      if (entry.isDirectory()) files.push(...collectBatchFiles([join(input, entry.name)]));
+      else if (/^batch-\d+\.json$/.test(entry.name)) files.push(join(input, entry.name));
+    }
+  }
+  return files;
+}
+
+function parseObjectFile(path: string): Record<string, unknown> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`"${basename(path)}" is not valid JSON: ${(error as Error).message}`);
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(
+      `"${basename(path)}" must be a JSON object mapping occurrence IDs to text, not an array.`
+    );
+  }
+  return parsed as Record<string, unknown>;
+}
+
 export function importTranslations(options: ImportOptions): ImportResult {
   const catalog = loadCatalog(options.catalogPath);
   const translations: TranslationMap = loadTranslations(options.translationsPath);
@@ -448,30 +543,67 @@ export function importTranslations(options: ImportOptions): ImportResult {
   const resources = new Map(catalog.resources.map((resource) => [resource.tgi, resource]));
 
   const files = collectJsonFiles(options.inputs);
+  const overrideFiles = files.filter((file) => /\.overrides\.json$/.test(file));
+  const primaryFiles = files.filter((file) => !/\.overrides\.json$/.test(file));
+
+  // Which keys each exported entry speaks for, when the export deduplicated by
+  // text. Read from the batch files, which are the ones that carry `alsoAt`.
+  const alsoAt = new Map<string, string[]>();
+  for (const file of collectBatchFiles(options.inputs)) {
+    const batch = parseObjectFile(file) as { entries?: { occurrenceId?: unknown; alsoAt?: unknown }[] };
+    for (const entry of batch.entries ?? []) {
+      if (typeof entry.occurrenceId !== "string" || !Array.isArray(entry.alsoAt)) continue;
+      alsoAt.set(
+        entry.occurrenceId,
+        entry.alsoAt.filter((id): id is string => typeof id === "string")
+      );
+    }
+  }
+
   const result: ImportResult = {
     filesRead: files.length,
     entriesSeen: 0,
     applied: 0,
+    propagated: 0,
+    overridden: 0,
     rejected: [],
     unknownIds: [],
     skippedReviewed: [],
     perPackage: {},
   };
 
-  for (const file of files) {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(readFileSync(file, "utf8"));
-    } catch (error) {
-      throw new Error(`"${basename(file)}" is not valid JSON: ${(error as Error).message}`);
-    }
-    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      throw new Error(
-        `"${basename(file)}" must be a JSON object mapping occurrence IDs to text, not an array.`
-      );
-    }
+  const record = (occurrence: CatalogOccurrence, text: string, note?: string) => {
+    translations[occurrence.occurrenceId] = text;
+    metadata.entries[occurrence.occurrenceId] = {
+      state: options.state,
+      sourceHash: occurrence.sourceHash,
+      updatedAt: new Date().toISOString(),
+      origin: options.origin,
+      ...(note ? { note } : {}),
+    };
+  };
 
-    for (const [occurrenceId, text] of Object.entries(parsed as Record<string, unknown>)) {
+  const count = (occurrence: CatalogOccurrence) => {
+    const label = resources.get(occurrence.resourceTgi)?.packageLabel ?? "?";
+    result.perPackage[label] = (result.perPackage[label] ?? 0) + 1;
+  };
+
+  /** Validates one text against one occurrence. Returns the issues, if any. */
+  const issuesFor = (occurrence: CatalogOccurrence, text: string) =>
+    validateTranslation({
+      sourceText: occurrence.sourceText,
+      catalogSourceHash: occurrence.sourceHash,
+      metadataSourceHash: occurrence.sourceHash,
+      text,
+      state: options.state,
+      includeUnreviewed: true,
+      ...(occurrence.ambiguous ? { ambiguous: true } : {}),
+    });
+
+  /** Applies one file's entries. Returns the ids it wrote, for propagation. */
+  const applyFile = (file: string, countAs: "applied" | "overridden"): string[] => {
+    const written: string[] = [];
+    for (const [occurrenceId, text] of Object.entries(parseObjectFile(file))) {
       result.entriesSeen += 1;
       if (typeof text !== "string") {
         result.rejected.push({
@@ -489,41 +621,51 @@ export function importTranslations(options: ImportOptions): ImportResult {
         result.skippedReviewed.push(occurrenceId);
         continue;
       }
-
-      const issues = validateTranslation({
-        sourceText: occurrence.sourceText,
-        catalogSourceHash: occurrence.sourceHash,
-        metadataSourceHash: occurrence.sourceHash,
-        text,
-        state: options.state,
-        includeUnreviewed: true,
-        ...(occurrence.ambiguous ? { ambiguous: true } : {}),
-      });
+      const issues = issuesFor(occurrence, text);
       // An English copy is a missing translation, not a broken one: keep it out of
       // the translation file so it shows up as still-untranslated.
-      if (issues.some((issue) => issue.code === "identical-to-source")) {
-        result.rejected.push({ occurrenceId, reasons: issues });
-        continue;
-      }
       if (issues.length > 0) {
         result.rejected.push({ occurrenceId, reasons: issues });
         continue;
       }
+      record(occurrence, text);
+      count(occurrence);
+      result[countAs] += 1;
+      written.push(occurrenceId);
+    }
+    return written;
+  };
 
-      translations[occurrenceId] = text;
-      metadata.entries[occurrenceId] = {
-        state: options.state,
-        sourceHash: occurrence.sourceHash,
-        updatedAt: new Date().toISOString(),
-        origin: options.origin,
-      };
-      result.applied += 1;
-      const label = resources.get(occurrence.resourceTgi)?.packageLabel ?? "?";
-      result.perPackage[label] = (result.perPackage[label] ?? 0) + 1;
+  for (const file of primaryFiles) {
+    for (const occurrenceId of applyFile(file, "applied")) {
+      // The other keys that carry this same English text, translated once.
+      for (const otherId of alsoAt.get(occurrenceId) ?? []) {
+        const other = byId.get(otherId);
+        // A key that appears twice in its own table cannot be addressed at all.
+        if (!other || other.ambiguous) continue;
+        if (metadata.entries[otherId]?.state === "reviewed" && !options.forceOverwriteReviewed) {
+          result.skippedReviewed.push(otherId);
+          continue;
+        }
+        const text = translations[occurrenceId]!;
+        const issues = issuesFor(other, text);
+        if (issues.length > 0) {
+          result.rejected.push({ occurrenceId: otherId, reasons: issues });
+          continue;
+        }
+        record(other, text, `same text as ${occurrenceId}`);
+        count(other);
+        result.propagated += 1;
+      }
     }
   }
 
-  if (result.applied > 0) {
+  // Overrides come last and win: a translator who wrote a different wording for
+  // one key - "Kids" is a radio station and a build category - is not overruled by
+  // the shared default.
+  for (const file of overrideFiles) applyFile(file, "overridden");
+
+  if (result.applied > 0 || result.propagated > 0 || result.overridden > 0) {
     saveTranslations(options.translationsPath, translations);
     saveMetadata(options.metadataPath, metadata);
   }

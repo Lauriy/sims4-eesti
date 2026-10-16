@@ -181,6 +181,10 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       packages: { help: "Only these package labels, comma-separated (e.g. SP06,SP08)" },
       "exclude-packages": { help: "Skip these package labels, comma-separated (e.g. BASE)" },
       "batch-size": { help: "Strings per batch file (default 400)" },
+      "dedupe-texts": {
+        boolean: true,
+        help: "One entry per distinct English text; the other keys are filled in from it at import",
+      },
       ids: { help: "Only the occurrence ids in this JSON file (a rank selection, or a plain array)" },
       limit: { help: "Stop after this many strings in total" },
       references: {
@@ -533,6 +537,7 @@ function runTranslateExport(parsed: ParsedArgs, config: Config): number {
     ...(parsed.values.get("batch-size") ? { batchSize: Number(parsed.values.get("batch-size")) } : {}),
     ...(parsed.values.get("limit") ? { limit: Number(parsed.values.get("limit")) } : {}),
     ...(ids ? { ids } : {}),
+    ...(parsed.booleans.has("dedupe-texts") ? { dedupeTexts: true } : {}),
     ...(parsed.values.get("references")
       ? { referenceDirs: parsed.values.get("references")!.split(",").map((item) => resolve(item.trim())) }
       : {}),
@@ -599,6 +604,14 @@ function runTranslateImport(parsed: ParsedArgs, config: Config): number {
 
   console.log(`Read ${result.filesRead} file(s), saw ${result.entriesSeen} translation(s)`);
   console.log(`  applied                  ${result.applied}`);
+  if (result.propagated > 0) {
+    console.log(
+      `  propagated               ${result.propagated} (same English text, another key's translation)`
+    );
+  }
+  if (result.overridden > 0) {
+    console.log(`  overridden               ${result.overridden} (a wording chosen for one key)`);
+  }
   console.log(`  rejected                 ${result.rejected.length}`);
   console.log(`  unknown ids              ${result.unknownIds.length}`);
   console.log(`  already reviewed, kept   ${result.skippedReviewed.length}`);
