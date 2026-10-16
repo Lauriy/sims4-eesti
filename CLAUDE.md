@@ -114,8 +114,12 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
 
 ## Claims this project may and may not make
 
-- **Never claim the in-game gate passed.** It is manual, listed in `README.md`,
-  and has not been run. Package integrity is verified; game behaviour is not.
+- **Never claim more of the in-game gate than `README.md`'s Status records.** The
+  gate is manual and lives in `README.md`; parts of it have been run (the package
+  loads, Estonian letters render, removal restores English, first-named package
+  wins) and parts have not (fall-through, branch deletion and pronoun
+  substitution, per-label inspection). Package integrity is verified; game
+  behaviour is only verified where Status says so.
 - **Never invent** resource IDs, game versions, test results, or observations.
   `build --game-version` records a version only when supplied; otherwise the
   manifest says "not recorded".
@@ -124,6 +128,10 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
   until a human reviews something.
 - Report exclusions and limitations in the build output and manifest rather than
   quietly dropping data. A skipped test is not a pass.
+- **Provenance is stated, not implied.** The repository itself is AI-generated;
+  the closing footnote of `README.md` records by what, in which sessions, and
+  with what human involvement. Update it when that changes rather than letting it
+  drift.
 - Keep the built package private pending a distribution review; it contains the
   English fallback text of the overridden table.
 
