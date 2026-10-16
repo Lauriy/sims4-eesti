@@ -6,10 +6,11 @@
  * and no command touches the game installation or your saves.
  */
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { buildPackage, defaultManifestPath, BuildError } from "./build.js";
 import { extractCatalog, loadCatalog, searchCatalog } from "./catalog.js";
 import { coverageByPackage, scanInstallation } from "./scan.js";
+import { exportBatches, importTranslations, translationStats } from "./translate.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -45,6 +46,9 @@ Commands:
   extract   Read one English .package and write a catalog of its strings
   scan      Find every string table installed and catalog them all at once
   coverage  Report how many strings each package contributes
+  translate-export  Write batches of untranslated strings for any engine to fill in
+  translate-import  Read filled-in batches back, validating every entry
+  translate-stats   Report how much of each package is translated
   search    Find English strings in a catalog and print their occurrence IDs
   set       Record an Estonian translation for one occurrence ID
   build     Write a package containing the validated translations
@@ -141,6 +145,43 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
     summary: "Report how many strings each package contributes",
     flags: {
       catalog: { help: "Path to a catalog.json from extract or scan" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  "translate-export": {
+    summary: "Write JSON batches of untranslated strings for any engine to fill in",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      out: { help: "Directory for the batch files and INSTRUCTIONS.md (required)" },
+      packages: { help: "Only these package labels, comma-separated (e.g. SP06,SP08)" },
+      "exclude-packages": { help: "Skip these package labels, comma-separated (e.g. BASE)" },
+      "batch-size": { help: "Strings per batch file (default 400)" },
+      limit: { help: "Stop after this many strings in total" },
+      translations: { help: "Translations file, to skip what is already done" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  "translate-import": {
+    summary: "Read filled-in batches back, validating every entry",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      in: { help: "Files or directories to read, comma-separated (required)" },
+      state: { help: "State to record: draft | machine | reviewed | needs_review (default machine)" },
+      origin: { help: "human | machine (default machine)" },
+      "force-overwrite-reviewed": {
+        boolean: true,
+        help: "Also replace entries already marked reviewed",
+      },
+      translations: { help: "Translations file to update" },
+      metadata: { help: "Metadata file to update" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  "translate-stats": {
+    summary: "How much of each package is translated",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      translations: { help: "Translations file to count" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -406,6 +447,112 @@ function runCoverage(parsed: ParsedArgs, config: Config): number {
   return EXIT_OK;
 }
 
+function runTranslateExport(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const outDir = resolve(required(parsed, "out"));
+  const split = (value: string | undefined): string[] | undefined =>
+    value ? value.split(",").map((item) => item.trim()).filter(Boolean) : undefined;
+  const packages = split(parsed.values.get("packages"));
+  const excludePackages = split(parsed.values.get("exclude-packages"));
+
+  const result = exportBatches({
+    catalogPath,
+    translationsPath,
+    outDir,
+    ...(parsed.values.get("batch-size") ? { batchSize: Number(parsed.values.get("batch-size")) } : {}),
+    ...(parsed.values.get("limit") ? { limit: Number(parsed.values.get("limit")) } : {}),
+    ...(packages ? { includePackages: packages } : {}),
+    ...(excludePackages ? { excludePackages } : {}),
+  });
+
+  console.log(`Wrote ${result.batchPaths.length} batch file(s) to ${outDir}`);
+  console.log(`  strings to translate: ${result.totalStrings}`);
+  for (const [label, count] of Object.entries(result.perPackage).sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${label.padEnd(28)} ${String(count).padStart(7)}`);
+  }
+  console.log(`\nInstructions: ${join(outDir, "INSTRUCTIONS.md")}`);
+  console.log(
+    `Import results with:\n  npm run cli -- translate-import --catalog "${catalogPath}" --in "${outDir}"`
+  );
+  return EXIT_OK;
+}
+
+function runTranslateImport(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const metadataPath = resolvePath(parsed, "metadata", config.metadataPath);
+  const inputs = required(parsed, "in")
+    .split(",")
+    .map((item) => resolve(item.trim()))
+    .filter(Boolean);
+  const stateRaw = parsed.values.get("state") ?? "machine";
+  if (!isTranslationState(stateRaw)) {
+    throw new UsageError(
+      `--state must be one of draft, machine, reviewed, needs_review (got "${stateRaw}").`
+    );
+  }
+  const originRaw = parsed.values.get("origin") ?? "machine";
+  if (originRaw !== "human" && originRaw !== "machine") {
+    throw new UsageError(`--origin must be "human" or "machine" (got "${originRaw}").`);
+  }
+
+  const result = importTranslations({
+    catalogPath,
+    translationsPath,
+    metadataPath,
+    inputs,
+    state: stateRaw,
+    origin: originRaw,
+    forceOverwriteReviewed: parsed.booleans.has("force-overwrite-reviewed"),
+  });
+
+  console.log(`Read ${result.filesRead} file(s), saw ${result.entriesSeen} translation(s)`);
+  console.log(`  applied                  ${result.applied}`);
+  console.log(`  rejected                 ${result.rejected.length}`);
+  console.log(`  unknown ids              ${result.unknownIds.length}`);
+  console.log(`  already reviewed, kept   ${result.skippedReviewed.length}`);
+  for (const [label, count] of Object.entries(result.perPackage).sort((a, b) => b[1] - a[1])) {
+    console.log(`    ${label.padEnd(28)} ${String(count).padStart(7)} applied`);
+  }
+  const byCode = new Map<string, number>();
+  for (const rejection of result.rejected) {
+    for (const issue of rejection.reasons) {
+      byCode.set(issue.code, (byCode.get(issue.code) ?? 0) + 1);
+    }
+  }
+  if (byCode.size > 0) {
+    console.log("\n  rejections by reason (these strings stay English):");
+    for (const [code, count] of [...byCode].sort((a, b) => b[1] - a[1])) {
+      console.log(`    ${code}: ${count}`);
+    }
+    for (const rejection of result.rejected.slice(0, 5)) {
+      console.log(`    e.g. ${rejection.occurrenceId} — ${rejection.reasons[0]!.message}`);
+    }
+  }
+  return EXIT_OK;
+}
+
+function runTranslateStats(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const stats = translationStats(catalogPath, translationsPath);
+  const share = (part: number, whole: number) =>
+    whole === 0 ? "0.0%" : `${((part / whole) * 100).toFixed(1)}%`;
+  console.log(`Catalog ${catalogPath}`);
+  console.log(`  strings            ${stats.total}`);
+  console.log(`  translated         ${stats.translated} (${share(stats.translated, stats.total)})`);
+  console.log(`  ambiguous/skipped  ${stats.ambiguous}`);
+  console.log("");
+  for (const [label, row] of [...stats.byPackage].sort((a, b) => b[1].total - a[1].total)) {
+    const eligible = row.total - row.ambiguous;
+    console.log(
+      `  ${label.padEnd(30)} ${String(row.translated).padStart(6)}/${String(eligible).padStart(6)} (${share(row.translated, eligible)})`
+    );
+  }
+  return EXIT_OK;
+}
+
 function runSearch(parsed: ParsedArgs, config: Config): number {
   const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
   const text = required(parsed, "text");
@@ -646,6 +793,12 @@ function main(argv: string[]): number {
       return runExtract(parsed, config);
     case "scan":
       return runScan(parsed, config);
+    case "translate-export":
+      return runTranslateExport(parsed, config);
+    case "translate-import":
+      return runTranslateImport(parsed, config);
+    case "translate-stats":
+      return runTranslateStats(parsed, config);
     case "coverage":
       return runCoverage(parsed, config);
     case "search":
