@@ -330,6 +330,52 @@ Consequences:
    disables it anywhere. This was caught by rescanning after the fix and noticing
    the numbers had not moved — the CLI had been overriding the default.
 
+
+## Reference translations in another language (measured, then captured)
+
+The game installs **only the selected language's** string files; the language is a
+Steam depot of about **12 MB** (`BytesToDownload` in `appmanifest_1222670.acf`),
+and switching replaces the existing ones. Switching to Finnish produced
+`Strings_FIN_FI.package` in place of `Strings_ENG_US.package`, including in the
+pack folders - so the English *source* disappears until the language is switched
+back, while `translations/et-EE.json` stays valid because occurrence IDs are
+derived from labels, resource identity and string keys, not from file paths.
+
+What Finnish gives us: `Data/Client/Strings_FIN_FI.package` has **58,374 entries
+covering 100% of the English table's keys**, so every base-game string can be
+shown to a translator alongside the official Finnish rendering:
+
+| key | English | Finnish |
+| --- | --- | --- |
+| `0DFED87C` | New Game | Uusi peli |
+| `D9F5EFCA` | Options | Asetukset |
+| `07A4B7F0` | Resume Game | Jatka peliä |
+| `1FDF180F` | Audio | Äänentoisto |
+
+Finnish is the most useful reference available: Finno-Ugric, no grammatical gender
+and a case system, so it shows how a professional team handled the same strings -
+especially the gender-branch text this tool defers. The files are kept in
+`work/reference-fi/` and are **never committed**: that text is EA's, not ours.
+
+Other packages, measured the same way: MC Command Center ships real translations
+in ~17 languages (2,400-3,150 of its 3,201 strings each), WickedWhims ships 68
+translated strings per locale out of 6,353, and Basemental Drugs' 17 locales are
+pure English stubs. So references help the base game and MCCC, and very little
+else.
+
+## A format trap that cost 11 strings
+
+Object names such as `"Ivy League Fence
+"` end with a **real newline character**,
+not with the two characters backslash and n. The batch instructions said "keep
+`
+` exactly as written", which reads as an escape sequence in a JSON file, so the
+translators wrote a literal backslash-n and dropped the newline. The importer
+refused all 11 with `token-mismatch` and `edge-whitespace-mismatch` - the guard
+worked, and the strings stayed English rather than shipping broken - and the
+instructions now spell out the difference. Worth knowing for the bulk run: this
+class of error is invisible in a diff and only shows up as odd spacing in game.
+
 ## Known limitations and open questions
 
 1. **Not run in game.** The manual gate in `README.md` is unexecuted. Nothing here

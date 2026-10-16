@@ -88,6 +88,7 @@ const STYLE_NOTES = [
   "Do not translate the ids. Do not add or drop entries. Do not explain.",
   "Keep every placeholder exactly as it appears, including its number and spelling: {0.SimFirstName}, {1.String}, {0.Number}, {0.Money}, {0.SimName}, {0.ObjectName}, {0.TimeShort}, {0.Timespan}, {0.DayOfWeekShort}, {0.DayOfWeekLong}. Reordering them inside a sentence is fine; changing or dropping one is not.",
   "Keep escape sequences and bracketed codes exactly: \\n, \\s, [PH], [V], [DNT].",
+  "Mind the difference between a real newline and the two characters backslash+n. In these JSON files a line break in the English is written \\n and means an actual newline character: your translation must contain a real newline there too, not the characters backslash and n. Do the same for leading and trailing newlines - several object names end with one.",
   "Preserve leading and trailing spaces exactly as in the English.",
   "Do not translate: Sim, Sims, The Sims 4, EA, Maxis, and pack or kit names (e.g. Backyard Stuff).",
   "Uppercase English labels are usually buttons or tabs: translate them as short noun phrases or imperatives in normal Estonian capitalisation, not in capitals.",
