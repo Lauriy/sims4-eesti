@@ -38,8 +38,8 @@ English .package ──extract──► catalog.json        (every string, with 
                     deploy ───────► your Mods folder  (one file, nothing else)
 ```
 
-Every step refuses to guess: strings whose placeholders or markup the tool does
-not fully understand are left in English and reported, never half-translated.
+Every step refuses to guess: a string whose syntax the tool cannot check is left
+in English and reported, never half-translated.
 
 ---
 
@@ -291,24 +291,32 @@ and style rules they follow, and the `note` on each entry in
 - **Untranslated entries keep their English text** inside the emitted table. That
   is deliberate: the tool does not rely on the game falling through to the
   original resource for missing entries, which is unverified behaviour.
-- **Strings with complex syntax are skipped.** Gender/plural branches such as
-  `{M0.his}` / `{F0.she}`, pronoun expressions such as
-  `{0.SimPronounSubjective}`, and all HTML-like markup (`<span class="pink">`,
-  `<b>`) are left in English. Preserving them verbatim would leave English words
-  inside Estonian sentences — see `IMPLEMENTATION_NOTES.md` for the survey these
-  rules come from. Measured against the base game's table:
+- **Complex syntax is translated, not skipped.** Gender and plural branches,
+  pronoun expressions and HTML-like markup are all carried through, because the
+  game's own Finnish translation shows how: `{S0.Pack}{P0.Packs}` becomes
+  `{S0.paketti}{P0.paketit}`, `{M1.his}{F1.her} dreams?` becomes a sentence with
+  the branch gone (Estonian has no grammatical gender either), and
+  `{0.SimPronounSubjective|xxUpper} can also Mentor others` becomes
+  `Hän voi myös opastaa muita`. The validator enforces the mechanics: variant
+  branches must survive as whole groups, markup tags character for character,
+  value references inside branches untouched. Measured against the base game's
+  table:
 
   | Strings | Share | Status |
   | --- | --- | --- |
-  | 53,551 | 91.7% | eligible for translation today |
-  | 3,315 | 5.7% | deferred: gender/plural/pronoun expressions |
-  | 1,501 | 2.6% | deferred: HTML-like markup |
-  | 7 | 0.0% | unbalanced or nested braces, left alone |
+  | 53,655 | 91.9% | no syntax at all |
+  | 2,524 | 4.3% | carries a gender branch (write both alike, or drop the pair) |
+  | 346 | 0.6% | carries a number or wording-style branch (all variants kept) |
+  | 1,700 | 2.9% | carries markup (tags kept exactly) |
+  | 576 | 1.0% | carries a pronoun the game would render in English (replaced by a word) |
+  | 4 | 0.0% | still deferred: brace shapes and tags that parse as neither |
 
 - **Runtime values still render in the game's own language.** A translated
   sentence that inserts a Sim's name, a day of the week, an amount of money or a
   date will show that value as the game produces it (English), because this mod
-  overrides text without registering a new locale.
+  overrides text without registering a new locale. Pronouns are the exception: a
+  translator may replace `{0.SimPronounSubjective}` with the Estonian word rather
+  than leave an English "he" inside the sentence.
 - **Whole-table overrides can go stale after a game update.** The build checks
   the source file's fingerprint at build time, but nothing protects a player who
   updates the game after installing. Rebuild after each game update.
@@ -359,6 +367,12 @@ Not verified:
   general, plus the Audio tab probe specifically.
 - **No human has reviewed the 672 translations.** All are machine-drafted and the
   manifest reports `reviewedApplied: 0`.
+- **The branch rules rest on shipped evidence, not on this machine.** That
+  Estonian may drop a whole gender pair (`{M0.his}{F0.her}`), keep both branches
+  alike, or write a word where the game would insert an English pronoun is
+  inferred from EA's own Finnish translation. None of those three has yet been
+  watched rendering in this game; they belong in the next in-game session, next
+  to the fall-through probe.
 - The 672 entries were translated before the glossary and the Finnish reference
   material existed, so their terminology has been checked (`glossary-check`) but
   not regenerated against those inputs.

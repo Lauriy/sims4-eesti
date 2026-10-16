@@ -77,7 +77,7 @@ before(() => {
         { key: SAMPLE_KEYS.loadGame, text: "Load Game" },
         { key: SAMPLE_KEYS.greeting, text: "Hello, {0.SimFirstName}!" },
         { key: SAMPLE_KEYS.counter, text: "Level {0.Number} of 10" },
-        { key: SAMPLE_KEYS.complex, text: "{M0.his} house" },
+        { key: SAMPLE_KEYS.complex, text: "{{0.String}} house" },
         { key: SAMPLE_KEYS.empty, text: "" },
       ],
     },
@@ -128,7 +128,7 @@ describe("whole-table override build", () => {
     assert.equal(english.entries[0]!.text, "Uus mäng");
     assert.equal(english.entries[1]!.text, "Load Game", "untouched entry keeps English");
     assert.equal(english.entries[2]!.text, "Tere, {0.SimFirstName}!", "placeholder survives");
-    assert.equal(english.entries[4]!.text, "{M0.his} house", "deferred string keeps English");
+    assert.equal(english.entries[4]!.text, "{{0.String}} house", "a deferred string keeps English");
     assert.equal(english.entries[5]!.text, "", "empty entry stays empty");
     assert.equal(read.tables[1]!.entries[0]!.text, "Jätka");
   });
@@ -269,7 +269,7 @@ describe("eligibility", () => {
   it("excludes deferred syntax, English copies and empty replacements", () => {
     writeTranslations([
       { id: occurrenceIdOf("New Game"), text: "Uus mäng", state: "reviewed" },
-      { id: occurrenceIdOf("{M0.his} house"), text: "{M0.his} maja", state: "reviewed" },
+      { id: occurrenceIdOf("{{0.String}} house"), text: "{{0.String}} maja", state: "reviewed" },
       { id: occurrenceIdOf("Load Game"), text: "Load Game", state: "reviewed" },
       { id: occurrenceIdOf("Resume"), text: "", state: "reviewed" },
     ]);

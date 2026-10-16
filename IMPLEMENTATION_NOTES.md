@@ -376,6 +376,59 @@ worked, and the strings stayed English rather than shipping broken - and the
 instructions now spell out the difference. Worth knowing for the bulk run: this
 class of error is invisible in a diff and only shows up as odd spacing in game.
 
+## Retiring the deferrals: what the Finnish translation proved
+
+Phase 1 left 6,786 strings in English because they carried syntax the validator
+could not check: gender and plural branches (`{M0.his}`, `{F0.she}`), pronoun
+expressions (`{0.SimPronounSubjective}`), and HTML-like markup. The reasoning was
+that preserving them verbatim would freeze English words inside Estonian
+sentences, and that guessing was worse.
+
+The Finnish copy of the game's own strings — captured while the Steam install was
+switched to Finnish for this purpose — answers the question directly, because
+EA's translators faced the same constructs. Measured over the base game:
+
+| Construct | Count | What Finnish does |
+| --- | --- | --- |
+| Gender branches `{M0.}{F0.}` | 2,524 strings, 8,644 tokens | **Deletes them** and rephrases. `{M1.his}{F1.her} dreams?` → `…toteuttamaan unelmansa?` |
+| Plural branches `{S0.}{P0.}` | 306 strings, 658 tokens | **Translates inside each branch**: `{S0.Pack}{P0.Packs}` → `{S0.paketti}{P0.paketit}` |
+| Wording-style branches `{T1.}{DAE1.}` | 40 strings | `{T1.Mess Around}{DAE1.WooHoo}` → `{T1.vehtailu}{DAE1.pelehdintä}`, case included |
+| Value reference in a branch | 9 strings: `{P0.ObjectName}`, `{S2.{S3.ObjectName}}` | **Kept verbatim** — the content names a value, not text |
+| Pronoun expressions | 576 strings | **Replaced by the word**: `{0.SimPronounSubjective\|xxUpper} can also Mentor others` → `Hän voi myös opastaa muita` |
+| Markup tags | 1,700 strings | Identical in 1,300 of 1,446 comparable strings; the exceptions are a localized legal URL and a dropped `<span class="money">` |
+
+Three things came out of this beyond "translate them":
+
+1. **The branch skeleton is the thing to check, not the branch text.** Estonian is
+   genderless like Finnish, so the *content* of a gender pair may be identical
+   (`{M0.tema}{F0.tema}`) or the pair may go as a whole. Both are structurally
+   sound; half a pair is not, because one gender would render with no text at all.
+   The validator now enforces exactly that, and refuses to drop a plural branch,
+   which Estonian needs.
+
+2. **Content that is a value name is a reference, not text.** `{P0.ObjectName}`
+   stays as it is in Finnish while `{S0.Pack}` is translated. To separate the two
+   without guessing, the value-name list is built from the corpus itself (44 names
+   from `{0.SimFirstName}` down to `{0.GhostPowersPoints}`). Audited afterwards:
+   of everything that appears in branch position, the only CamelCase-shaped
+   content that is *not* a value name is `WooHoo`, which Finnish translates.
+
+3. **The pronoun rule removes a documented limitation**, partially. Runtime values
+   still render in the game's own language, but a pronoun is now the translator's
+   word rather than an English "he" inside an Estonian sentence.
+
+After the change, 58,370 of the base game's 58,374 entries are eligible; the four
+that remain are a brace shape that parses as neither a value nor a branch, two
+tag-shaped strings in a mod's OpenGL copyright notice that are actually an email
+address, and their siblings.
+
+**What is still unverified.** The *deletion* strategy for gender branches is
+inferred from shipped Finnish, not observed in this game: we know EA shipped it,
+we have not watched it render here. The same goes for a rephrased pronoun
+sentence. Both are cheap to check and belong in the in-game gate next to the
+precedence and fall-through probes: a package with one collapsed branch, one
+deleted branch and one replaced pronoun, looked at in a moodlet.
+
 ## Known limitations and open questions
 
 1. **Not run in game.** The manual gate in `README.md` is unexecuted. Nothing here

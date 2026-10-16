@@ -76,16 +76,35 @@ Paths contain spaces: quote them.
 `src/validation.ts` decides what may be applied. The rules come from a survey of
 the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption:
 
-- Supported placeholders are a **closed whitelist** (`{0.SimFirstName}`,
-  `{1.String}`, `{0.Number}`, `{0.Money}`, `{0.SimName}`, `{0.ObjectName}`,
-  `{0.TimeShort}`, `{0.Timespan}`, `{0.DayOfWeekShort}`, `{0.DayOfWeekLong}`).
-  Preserve them as a **multiset** — reordering is allowed, losing or adding a
-  repetition is not.
-- **Deferred, left in English:** gender/plural branches (`{M0.his}`, `{F0.she}`),
-  pronoun expressions (`{0.SimPronounSubjective}`), HTML-like markup (`<span>`,
-  `<b>`, `<font>`), unbalanced or nested braces. They carry source-language
-  grammar or unmodelled reflow rules; freezing them would leave English words in
-  Estonian sentences.
+- Runtime values are preserved as a **multiset** — reordering is allowed, losing
+  or adding a repetition is not. The name list is closed and measured (44 names
+  over 75,340 strings: `{0.SimFirstName}`, `{1.String}`, `{0.Number}`,
+  `{0.Money}`, `{0.ObjectName}`, `{0.Points}`, `{0.DateShort}`, …).
+- **Variant branches are translated, not deferred.** `{M0.his}{F0.her}` (gender),
+  `{S0.is}{P0.are}` (number), `{T1.Mess Around}{DAE1.WooHoo}` (wording style).
+  The text after the dot is translated; the `{X0.}` marker is kept. The validator
+  requires every branch group to survive whole, and allows exactly one thing to
+  go: a **complete gender group**, because Estonian has no grammatical gender and
+  EA's own Finnish deletes them (`{M1.his}{F1.her} dreams?` → `…unelmansa?`).
+  Half a group is refused — one gender would have no text.
+- **Branch content that is a value name is a reference, not text:**
+  `{P0.ObjectName}`, `{S2.{S3.ObjectName}}` stay exactly as written (Finnish keeps
+  them too). Everything else in a branch is literal text (`{S0.Pack}` →
+  `{S0.paketti}`). Measured: the only CamelCase content in the whole catalog that
+  is *not* a value name is `WooHoo`, which Finnish translates.
+- **Markup tags are preserved character for character** (`<b>`, `<span
+  class="…">`, `<font color="…">`, `<i>`, `<ul>`, `<li>`, `<a href="…">`), as a
+  multiset; only the text between them is translated. Finnish keeps them identical
+  in 1,300 of 1,446 comparable strings, and the 146 exceptions (a localized legal
+  URL, a dropped `<span class="money">`) are refused rather than guessed at.
+- **Pronouns the game would render in English may be replaced by a word.**
+  `{0.SimPronounSubjective|xxUpper} can also Mentor others` → `Ta võib ka teisi
+  õpetada`. Dropping is allowed for the pronoun family and `SimNameAndPronouns`
+  only, never for a value that carries data (a number, a name, a date). Keeping
+  the placeholder stays legal — the player then sees the English pronoun.
+- Still deferred (4 of 58,374 base-game strings): brace shapes that parse as
+  neither a value nor a branch, tags outside the list, unbalanced or nested
+  braces, and an email address in angle brackets in a mod's legal notice.
 - Also rejected: stale source hashes, unknown IDs, malformed metadata, empty
   replacements of non-empty text, English copied verbatim (not counted as a
   translation), unpaired surrogates, control characters, changed surrounding

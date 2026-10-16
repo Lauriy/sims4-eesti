@@ -29,6 +29,7 @@ import {
 } from "./translations.js";
 import {
   analyzeSyntax,
+  isGenderBranch,
   validateTranslation,
   type TranslationState,
   type ValidationIssue,
@@ -82,6 +83,8 @@ export interface ExportOptions {
   includePackages?: string[];
   /** Skip these package labels (e.g. BASE, when doing the packs first). */
   excludePackages?: string[];
+  /** Restrict to these occurrence IDs - e.g. the priority list `rank` writes. */
+  ids?: string[];
   /** Directories or files holding reference translations (e.g. work/reference-fi). */
   referenceDirs?: string[];
   /** How many reference languages to show per entry (default 3). */
@@ -105,7 +108,7 @@ const STYLE_NOTES = [
   "Translate the English game text into Estonian (et-EE).",
   "Return ONLY a JSON object mapping each occurrenceId to the Estonian text: {\"<id>\": \"<text>\", ...}",
   "Do not translate the ids. Do not add or drop entries. Do not explain.",
-  "Keep every placeholder exactly as it appears, including its number and spelling: {0.SimFirstName}, {1.String}, {0.Number}, {0.Money}, {0.SimName}, {0.ObjectName}, {0.TimeShort}, {0.Timespan}, {0.DayOfWeekShort}, {0.DayOfWeekLong}. Reordering them inside a sentence is fine; changing or dropping one is not.",
+  "Keep every placeholder exactly as it appears, including its number and spelling: {0.SimFirstName}, {1.String}, {0.Number}, {0.Money}, {0.SimName}, {0.ObjectName}, {0.TimeShort}, {0.Timespan}, {0.DayOfWeekShort}, {0.DayOfWeekLong}, {0.DateShort}, {0.SimFirstNameList} and the other runtime values you will see. Reordering them inside a sentence is fine; changing or dropping one is not.",
   "Keep escape sequences and bracketed codes exactly: \\n, \\s, [PH], [V], [DNT].",
   "Mind the difference between a real newline and the two characters backslash+n. In these JSON files a line break in the English is written \\n and means an actual newline character: your translation must contain a real newline there too, not the characters backslash and n. Do the same for leading and trailing newlines - several object names end with one.",
   "Preserve leading and trailing spaces exactly as in the English.",
@@ -113,6 +116,11 @@ const STYLE_NOTES = [
   "Uppercase English labels are usually buttons or tabs: translate them as short noun phrases or imperatives in normal Estonian capitalisation, not in capitals.",
   "Estonian buttons and menu entries are imperative verb phrases (Salvesta, Laadi, Välju), not nouns.",
   "Do not attach Estonian case endings to names or values that the game inserts at runtime; rephrase instead.",
+  "Variant branches look like {M0.his}, {F0.her}, {N0.their}, {S0.is}, {P0.are}, {T1.Mess Around}, {DAE1.WooHoo}. The letters pick the variant - M/F/N is the Sim's gender, S/P is singular or plural, T/DAE is a wording style - and the words after the dot are the text for that variant. Translate that text, keeping the {X0.} marker exactly as it is. Case matters: {T1.vehtailu} mid-sentence, {T1.Vehtailu} at the start of one.",
+  "Gender branches: Estonian has no grammatical gender, so write the same Estonian in the male and female branch - {M0.tema}{F0.tema} - or drop the whole group and phrase the sentence without it, the way EA's own Finnish does ({M1.his}{F1.her} dreams? becomes ...toteuttamaan unelmansa?). Never keep one branch of a pair and drop the other: one gender would be left with no text. Plural branches (S/P) must both stay, because Estonian distinguishes number too.",
+  "If a branch contains a value name rather than words - {P0.ObjectName}, {S2.{S3.ObjectName}} - leave that part exactly as it is; the game substitutes it at runtime.",
+  "Markup tags (<b>, </b>, <span class=\"pink\">, <font color=\"#EC262E\">, <i>, <ul>, <li>, <a href=\"...\">) must all be kept, character for character, including attribute values - translate only the text between them. If a colour or a URL would read better localized, leave the English one: it will be reported rather than applied.",
+  "Pronouns the game inserts - {0.SimPronounSubjective}, {0.SimPronounObjective}, {0.SimPronounPossessiveDependent}, {0.SimPronounReflexive}, with or without a |xxUpper modifier - render as English words, because the game's own text is English here. Replace them with the Estonian word instead (ta, tema, teda, oma), matching the capitalisation the modifier asked for: {0.SimPronounSubjective|xxUpper} can also Mentor others -> Ta võib ka teisi õpetada. Keeping the placeholder is allowed if you cannot word it, but the player will see an English pronoun.",
   "If a string cannot be translated without breaking the rules above, leave it out of the answer rather than guessing - it will stay English and be reported.",
 ];
 
@@ -125,6 +133,27 @@ function classify(sourceText: string): { kind: string; notes: string[] } {
   const notes: string[] = [];
   const trimmed = sourceText.trim();
   const words = trimmed.split(/\s+/).filter(Boolean).length;
+
+  // Syntax a translator has to handle in a particular way, said next to the
+  // string rather than only in the batch preamble.
+  const syntax = analyzeSyntax(sourceText);
+  if (syntax.branches.some(isGenderBranch)) {
+    notes.push(
+      "has a gender branch: write the same Estonian in both variants, or drop the whole pair - never just one"
+    );
+  }
+  if (syntax.branches.some((branch) => !isGenderBranch(branch))) {
+    notes.push("has variant branches that must all be kept (singular/plural or wording style)");
+  }
+  if (syntax.branchValues.length > 0) {
+    notes.push("a branch contains a runtime value name: leave that part exactly as it is");
+  }
+  if (syntax.tags.length > 0) {
+    notes.push("keep every markup tag exactly, translate only the text between them");
+  }
+  if (syntax.runtimeValues.some((value) => value.droppable)) {
+    notes.push("has a pronoun the game would render in English: replace it with the Estonian word");
+  }
 
   if (/^\(From /.test(trimmed)) {
     return { kind: "moodlet source, shown in brackets after the mood text", notes };
@@ -180,8 +209,10 @@ export function exportBatches(options: ExportOptions): ExportResult {
   const translations = loadTranslations(options.translationsPath);
   const batchSize = options.batchSize ?? 400;
 
+  const wanted = options.ids ? new Set(options.ids) : undefined;
   const candidates = catalog.occurrences.filter((occurrence) => {
     if (occurrence.ambiguous) return false;
+    if (wanted && !wanted.has(occurrence.occurrenceId)) return false;
     if (translations[occurrence.occurrenceId] !== undefined) return false;
     if (catalog.resources.find((r) => r.tgi === occurrence.resourceTgi)?.localeByte !== "00") return false;
     if (options.includePackages && !options.includePackages.includes(occurrence.packageLabel)) return false;

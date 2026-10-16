@@ -50,34 +50,125 @@ describe("syntax analysis", () => {
     }
   });
 
-  it("defers gender and plural branches instead of freezing English inside them", () => {
-    for (const text of ["{M0.his} sim", "{F0.she} läks", "{S0.is} ready", "{P0.packs}"]) {
-      assert.match(analyzeSyntax(text).problem ?? "", /does not handle/, text);
-    }
-  });
-
-  it("defers pronoun expressions and modifier forms", () => {
-    assert.match(
-      analyzeSyntax("{0.SimPronounSubjective}").problem ?? "",
-      /not one of the value names/
+  it("accepts a gender branch, collapsed or removed", () => {
+    // Estonian has no grammatical gender, so both branches can hold one wording.
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({ sourceText: "{M0.his}{F0.her} sim", text: "{M0.tema}{F0.tema} sõber" })
+        )
+      ),
+      []
     );
-    assert.match(
-      analyzeSyntax("{0.SimPronounSubjective|xxUpper}").problem ?? "",
-      /does not handle/
+    // Or the whole group may go, as EA's own Finnish does: "{M1.his}{F1.her} dreams?"
+    // is "…toteuttamaan unelmansa?" with no branch at all.
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "{M0.his}{F0.her} sim", text: "tema sõber" }))),
+      []
     );
   });
 
-  it("defers markup, whose reflow rules are not handled yet", () => {
-    assert.match(analyzeSyntax('<span class="pink">Tere</span>').problem ?? "", /markup/);
-    assert.match(analyzeSyntax("<b>Tere</b>").problem ?? "", /markup/);
-    // A plain less-than sign is not markup.
-    assert.equal(analyzeSyntax("1 < 2 ja 3 > 2").problem, undefined);
+  it("refuses half a gender group, which would leave one gender with no text", () => {
+    assert.deepEqual(
+      codes(
+        validateTranslation(input({ sourceText: "{M0.his}{F0.her} sim", text: "{M0.tema} sõber" }))
+      ),
+      ["branch-mismatch"]
+    );
   });
 
-  it("defers unbalanced or nested braces", () => {
+  it("refuses to drop a plural branch, which Estonian needs too", () => {
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "{S0.is}{P0.are} valmis", text: "valmis" }))),
+      ["branch-mismatch"]
+    );
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({ sourceText: "{S0.is}{P0.are} valmis", text: "{S0.on}{P0.on} valmis" })
+        )
+      ),
+      []
+    );
+  });
+
+  it("leaves a value reference inside a branch exactly as it is", () => {
+    // Measured: Finnish keeps "{P0.ObjectName}" and translates "{S0.Pack}".
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({ sourceText: "Graft with {P0.ObjectName}.", text: "Pookige {P0.ObjectName}." })
+        )
+      ),
+      []
+    );
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({ sourceText: "Graft with {P0.ObjectName}.", text: "Pookige {P0.eseme}." })
+        )
+      ),
+      ["placeholder-mismatch"]
+    );
+    // A nested branch inside branch content is preserved the same way.
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({
+            sourceText: "Sell {S2.{S3.ObjectName}} in Area",
+            text: "Müü {S2.{S3.ObjectName}} piirkonnas",
+          })
+        )
+      ),
+      []
+    );
+  });
+
+  it("lets a pronoun be replaced by a word, but never invented", () => {
+    const source = "\\n{0.SimPronounSubjective|xxUpper} can also Mentor others.";
+    // What EA's Finnish does: "Hän voi myös opastaa muita."
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: source, text: "\\nTa võib ka teisi õpetada." }))),
+      []
+    );
+    // Keeping the expression is allowed too.
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({ sourceText: source, text: "\\n{0.SimPronounSubjective|xxUpper} võib ka õpetada." })
+        )
+      ),
+      []
+    );
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "Tema tuli.", text: "{0.SimPronounSubjective} tuli." }))),
+      ["placeholder-mismatch"]
+    );
+  });
+
+  it("accepts markup, provided every tag survives exactly", () => {
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "<b>Buy</b> now", text: "<b>Osta</b> kohe" }))),
+      []
+    );
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "<b>Buy</b> now", text: "Osta kohe" }))),
+      ["markup-mismatch"]
+    );
+    assert.deepEqual(
+      codes(validateTranslation(input({ sourceText: "<b>Buy</b> now", text: "<i>Osta</i> kohe" }))),
+      ["markup-mismatch"]
+    );
+  });
+
+  it("still defers the shapes it cannot parse", () => {
     assert.match(analyzeSyntax("{0.String").problem ?? "", /no closing/);
     assert.match(analyzeSyntax("Tere}").problem ?? "", /no opening/);
-    assert.match(analyzeSyntax("{{0.String}}").problem ?? "", /nested/);
+    assert.match(analyzeSyntax("{{0.String}}").problem ?? "", /does not handle/);
+    // An email address in angle brackets is not markup, and is not guessed at.
+    assert.match(analyzeSyntax("<milan ikits[]ieee org>").problem ?? "", /does not handle/);
+    // A plain less-than sign is not markup.
+    assert.equal(analyzeSyntax("1 < 2 ja 3 > 2").problem, undefined);
   });
 
   it("collects escapes and inline codes as structural tokens", () => {
@@ -152,18 +243,19 @@ describe("translation validation", () => {
     );
   });
 
-  it("rejects a translation using syntax we defer, but leaves the English alone", () => {
+  it("rejects a branch the English does not have", () => {
     assert.deepEqual(
       codes(validateTranslation(input({ sourceText: "Simple text", text: "{M0.his} tekst" }))),
-      ["unsupported-syntax"]
+      ["branch-mismatch"]
     );
+  });
+
+  it("accepts a branch whose literal content is translated", () => {
     assert.deepEqual(
       codes(
-        validateTranslation(
-          input({ sourceText: "{M0.his} sim", text: "{M0.his} tegelane" })
-        )
+        validateTranslation(input({ sourceText: "{T1.Mess Around} is fun", text: "{T1.vehtailu} on lõbus" }))
       ),
-      ["unsupported-syntax"]
+      []
     );
   });
 

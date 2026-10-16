@@ -63,7 +63,7 @@ before(() => {
       entries: [
         { key: SAMPLE_KEYS.newGame, text: "New Game" },
         { key: SAMPLE_KEYS.greeting, text: "Hello, {0.SimFirstName}!" },
-        { key: SAMPLE_KEYS.complex, text: "{M0.his} house" },
+        { key: SAMPLE_KEYS.complex, text: "{{0.String}} house" },
       ],
     },
   ]);
@@ -113,7 +113,7 @@ describe("cli", () => {
 
   it("hides deferred strings from --translatable-only", () => {
     const all = run(["search", "--catalog", catalogPath, "--text", "house"]);
-    assert.match(all.stdout, /deferred|\{M0\.his\}/);
+    assert.match(all.stdout, /deferred|\{\{0\.String\}\}/);
     const filtered = run([
       "search",
       "--catalog",
@@ -122,7 +122,7 @@ describe("cli", () => {
       "house",
       "--translatable-only",
     ]);
-    assert.equal(filtered.stdout.includes("{M0.his}"), false);
+    assert.equal(filtered.stdout.includes("{{0.String}}"), false);
   });
 
   it("records a translation from the ID printed by search", () => {

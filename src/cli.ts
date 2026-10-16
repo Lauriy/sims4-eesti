@@ -13,6 +13,7 @@ import { coverageByPackage, scanInstallation } from "./scan.js";
 import { exportBatches, importTranslations, translationStats } from "./translate.js";
 import { mergeCatalogs } from "./merge.js";
 import { checkGlossary, loadGlossary, mergeTermReports } from "./glossary.js";
+import { occurrenceIdsOf, rankStrings } from "./rank.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
 import { loadMetadata, loadTranslations, setTranslation } from "./translations.js";
 import { analyzeSyntax, isTranslationState } from "./validation.js";
@@ -159,6 +160,19 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       ...COMMON_CONFIG_FLAG,
     },
   },
+  rank: {
+    summary: "Order untranslated strings by how likely a player is to see them",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      translations: { help: "Translations file, for what to skip and what to check against" },
+      glossary: { help: "Glossary file for the core-vocabulary bonus (default glossary.json)" },
+      packages: { help: "Only these package labels, comma-separated (e.g. BASE)" },
+      top: { help: "How many texts to select (default 1000)" },
+      sample: { help: "How many entries to print as a sample (default 20)" },
+      out: { help: "Write the selection as JSON, for translate-export --ids" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
   "translate-export": {
     summary: "Write JSON batches of untranslated strings for any engine to fill in",
     flags: {
@@ -167,6 +181,7 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       packages: { help: "Only these package labels, comma-separated (e.g. SP06,SP08)" },
       "exclude-packages": { help: "Skip these package labels, comma-separated (e.g. BASE)" },
       "batch-size": { help: "Strings per batch file (default 400)" },
+      ids: { help: "Only the occurrence ids in this JSON file (a rank selection, or a plain array)" },
       limit: { help: "Stop after this many strings in total" },
       references: {
         help:
@@ -501,6 +516,8 @@ function runMerge(parsed: ParsedArgs, config: Config): number {
 }
 
 function runTranslateExport(parsed: ParsedArgs, config: Config): number {
+  const idsPath = parsed.values.get("ids");
+  const ids = idsPath ? readIdsFile(resolve(idsPath)) : undefined;
   const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
   const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
   const outDir = resolve(required(parsed, "out"));
@@ -515,6 +532,7 @@ function runTranslateExport(parsed: ParsedArgs, config: Config): number {
     outDir,
     ...(parsed.values.get("batch-size") ? { batchSize: Number(parsed.values.get("batch-size")) } : {}),
     ...(parsed.values.get("limit") ? { limit: Number(parsed.values.get("limit")) } : {}),
+    ...(ids ? { ids } : {}),
     ...(parsed.values.get("references")
       ? { referenceDirs: parsed.values.get("references")!.split(",").map((item) => resolve(item.trim())) }
       : {}),
@@ -645,6 +663,102 @@ function runGlossaryCheck(parsed: ParsedArgs, config: Config): number {
 These are reports, not errors: Estonian inflects, and a term can legitimately`);
     console.log(`have another rendering. Fix the offender with "set", or add the form to the term's`);
     console.log(`"accept" list in ${glossaryPath} when the translation is right and the checker is wrong.`);
+  }
+  return EXIT_OK;
+}
+
+/** A rank selection (`{ ids: [...] }`) or a plain JSON array of occurrence ids. */
+function readIdsFile(path: string): string[] {
+  const parsed = JSON.parse(readFileSync(path, "utf8")) as unknown;
+  const ids = Array.isArray(parsed) ? parsed : (parsed as { ids?: unknown }).ids;
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) {
+    throw new UsageError(`"${path}" does not look like a list of occurrence ids.`);
+  }
+  return ids as string[];
+}
+
+function runRank(parsed: ParsedArgs, config: Config): number {
+  const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
+  const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
+  const glossaryPath = parsed.values.get("glossary") ?? "glossary.json";
+  const top = Number(parsed.values.get("top") ?? 1000);
+  const sample = Number(parsed.values.get("sample") ?? 20);
+  const outPath = parsed.values.get("out");
+  const packages = (parsed.values.get("packages") ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const catalog = loadCatalog(catalogPath);
+  const translations = loadTranslations(translationsPath);
+  const glossary = loadGlossary(glossaryPath);
+  const options = {
+    glossary,
+    translations,
+    anchors: Object.keys(translations),
+    ...(packages.length > 0 ? { includePackages: packages } : {}),
+  };
+
+  const ranked = rankStrings(catalog, { ...options, top });
+  const occurrenceIds = occurrenceIdsOf(ranked);
+
+  console.log(`Catalog ${catalogPath}: ${catalog.occurrences.length} occurrence(s)`);
+  console.log(
+    `Top ${ranked.length} untranslated text(s) = ${occurrenceIds.length} occurrence(s), ` +
+      `scored ${ranked[0]?.score ?? 0} down to ${ranked[ranked.length - 1]?.score ?? 0}`
+  );
+
+  // The score is a heuristic, so it is checked against the only ground truth
+  // available: strings already confirmed on screen. They are the anchors, so they
+  // are excluded from the list - this re-ranks everything to see where they land.
+  if (Object.keys(translations).length > 0) {
+    const everything = rankStrings(catalog, { ...options, translations: {}, anchors: Object.keys(translations) });
+    const positions = new Map<string, number>();
+    everything.forEach((entry, index) => {
+      for (const occurrence of entry.occurrences) positions.set(occurrence.occurrenceId, index + 1);
+    });
+    const placed = Object.keys(translations)
+      .map((id) => positions.get(id))
+      .filter((position): position is number => position !== undefined)
+      .sort((a, b) => a - b);
+    if (placed.length > 0) {
+      const median = placed[Math.floor(placed.length / 2)]!;
+      console.log(
+        `\nSelf-check: of ${placed.length} string(s) already confirmed on screen, ` +
+          `${placed.filter((position) => position <= top).length} rank inside the top ${top} ` +
+          `(median position ${median} of ${everything.length}, worst ${placed[placed.length - 1]})`
+      );
+    }
+  }
+
+  if (ranked.length > 0) {
+    console.log(`\nEvery ${Math.max(1, Math.floor(ranked.length / Math.max(1, sample)))}th entry:`);
+    const step = Math.max(1, Math.floor(ranked.length / Math.max(1, sample)));
+    for (let index = 0; index < ranked.length; index += step) {
+      const entry = ranked[index]!;
+      console.log(
+        `  ${String(index + 1).padStart(4)}. ${JSON.stringify(entry.text.slice(0, 44))} ` +
+          `[${entry.occurrences.length} keys; ${entry.why.join("; ")}]`
+      );
+    }
+  }
+
+  if (outPath) {
+    const out = resolve(outPath);
+    writeJsonAtomic(out, {
+      generatedAt: new Date().toISOString(),
+      catalog: catalogPath,
+      packages: packages.length > 0 ? packages : "all",
+      count: occurrenceIds.length,
+      ids: occurrenceIds,
+      texts: ranked.map((entry) => ({
+        text: entry.text,
+        score: entry.score,
+        keys: entry.occurrences.length,
+        why: entry.why,
+      })),
+    });
+    console.log(`\nWrote ${out} (${occurrenceIds.length} occurrence ids) - pass it to translate-export --ids`);
   }
   return EXIT_OK;
 }
@@ -948,6 +1062,8 @@ function main(argv: string[]): number {
       return runTranslateExport(parsed, config);
     case "translate-import":
       return runTranslateImport(parsed, config);
+    case "rank":
+      return runRank(parsed, config);
     case "glossary-check":
       return runGlossaryCheck(parsed, config);
     case "glossary-merge":
