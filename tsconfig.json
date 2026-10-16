@@ -15,5 +15,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["src/**/*.ts", "tests/**/*.ts", "agents/**/*.ts"]
+  "include": ["src/**/*.ts", "tests/**/*.ts", "agents/**/*.ts", "probes/**/*.ts"]
 }
