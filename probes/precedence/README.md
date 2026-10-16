@@ -73,9 +73,9 @@ re-derived without a game install. Game version and date, please.
 
 | # | Question | Result | Date / version |
 | --- | --- | --- | --- |
-| 1 | Removing the package restores English | *(not yet run)* | |
-| 2 | Mods vs Mods, same resource: which text wins? | *(not yet run)* — and is it the alphabetically first or last filename? | |
-| 3 | Does a sparse override fall through to the game's own text? | *(not yet run)* | |
+| 1 | Removing the package restores English | **Yes.** Same harness, same screen: with the package `LAADI MÄNG` / `Uus MÄNG`, with it parked `LOAD GAME` / `NEW GAME` (read by OCR, 2026-10-16) | 2026-10-16, 1.128.90.1030 |
+| 2 | Mods vs Mods, same resource: which text wins? | **First-named wins, twice observed.** `aaa_probe.package` beat `zzz_probe.package` (identical size, identical timestamp — only the name differed), and `Sims4_Eesti.package` beat `zzz_probe.package`. The first pair is the discriminating one; the second is consistent with name order but would also fit "newest wins". | 2026-10-16, 1.128.90.1030 |
+| 3 | Does a sparse override fall through to the game's own text? | *(not yet run — needs Build Mode navigation)* | |
 
 Already answered, for reference: **Mods beats the game's own copy of this
 resource** — the shipped `Strings_ENG_US.package` contains the base table, and the

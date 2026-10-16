@@ -65,8 +65,11 @@ starts with a precedence probe, not with a scanner:
   two Mods files with the same TGI, and `<pack>` vs `Delta\<pack>`.
 - Record the outcome per pair in a table in this repository. Until a row is
   filled in, nothing in the tool may rely on that ordering.
-- **Already answered:** Mods beats the game's own copy of the base table
-  (observed in game, 2026-10-16). The remaining rows are open.
+- **Already answered (in game, 2026-10-16):** Mods beats the game's own copy of
+  the base table; and of two Mods packages claiming the same resource, the
+  alphabetically first filename won. The second is a single data point — the rule
+  could be creation or index order — so it is recorded as "first-named won", not
+  as "alphabetical order decides".
 
 SDX (`Delta`) stays **out of scope for catalogs** until this is answered: files
 are detected, counted and reported as excluded, and the manifest says so. The

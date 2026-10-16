@@ -139,9 +139,9 @@ Build of the real artifact:
 ```
 npm run cli -- build --catalog work/base/catalog.json --include-unreviewed \
   --out dist/Sims4_Eesti.package --game-version "1.128.90.1030"
-→ dist/Sims4_Eesti.package, sha256 16db9fbeb88d28fb7a81c044ccec0fa6c0a6b89e67cf64ce51f9279fe22d19fc
-  52 replaced, 58,322 kept in English, 0 excluded
-  (earlier builds: 30 translations 66ffac53…, 31 translations 488b2b2e…)
+→ dist/Sims4_Eesti.package, sha256 4e8c322793eb0a9ff98b53c92a2b6d562f7b3b553ab1769792a5cc388ee5914a
+  57 replaced, 58,317 kept in English, 0 excluded
+  (earlier builds: 30 translations 66ffac53…, 31 translations 488b2b2e…, 52 translations 16db9fbe…)
 ```
 
 Independent re-check of that artifact against the source file (separate script,

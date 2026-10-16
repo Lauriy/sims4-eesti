@@ -8,8 +8,8 @@ you point it at one English `.package`, pick strings, write Estonian text, and i
 writes one `.package` you can drop into your Mods folder.
 
 **Scope of this prototype:** one supplied package (by default the base game's
-`Data\Client\Strings_ENG_US.package`), 52 translated entries out of its 58,374,
-covering 39 distinct English strings across the menus, the options dialogs and the
+`Data\Client\Strings_ENG_US.package`), 57 translated entries out of its 58,374,
+covering 44 distinct English strings across the menus, the options dialogs and the
 mode switcher. Every
 other entry in that table keeps its English text. This is not a complete Estonian
 localisation of the game.
@@ -199,14 +199,14 @@ later; or the game updated and the package needs a rebuild.
 
 ## What is translated today
 
-52 entries covering 39 distinct English strings, all base game. Grouped by where
+57 entries covering 44 distinct English strings, all base game. Grouped by where
 you will see them; the full list with keys is `translations/et-EE.json`.
 
 | Group | Estonian | Where to look |
 | --- | --- | --- |
+| Main menu | `Jätka mängu`, `Uus mäng`, `Laadi mäng`, `Valikud`, `Halda maailmu`, `Välju mängust`, `Galerii`, `Mängi stsenaariumi`, `Kogu`, `Avaleht` | Main menu |
 | Options dialog tabs | `Mängimine`, `Graafika`, `Heli`, `Juurdepääsetavus`, `Autorid`, `EA konto`, `Õppetunnid`, `Keskkond`, `Mängukaamera` | Options, across the top |
 | Audio screen | `Helitugevus`, `Hääled:`, `Kasutajaliidese heli:`, `Muusika` | Options → Heli |
-| Main menu | `Uus mäng`, `Laadi mäng`, `Jätka`, `Valikud`, `Halda maailmu`, `Välju mängust` | Main menu |
 | In-game menu | `Menüü`, `Salvesta mäng?`, `Välju peaekraanile`, `Mängu valikud`, `Salvesta mäng` | ESC menu |
 | Pack selection | `Pakettide valik`, `Mängupaketid`, `Laienduspaketid`, `Komplektid`, `Väljalaskemärkmed` | Pack Selection screen |
 | Mode switcher | `Ehitusrežiim`, `Elurežiim` | bottom-left in game |
@@ -218,7 +218,10 @@ you will see them; the full list with keys is `translations/et-EE.json`.
 Every group was chosen by inspecting the strings that sit next to each label in
 the table (Maxis groups UI text in blocks) — see `IMPLEMENTATION_NOTES.md` for why
 that is the only offline evidence available, and for the one label that was
-chosen wrongly before the first trial.
+chosen wrongly before the first trial. Two labels are deliberately **not**
+translated: `Marketplace` and one of the two `Home` entries, both of which share
+their text with a build/buy list, where a single translation would change a
+category name too.
 
 **All of this text is machine-drafted and unreviewed.** `npm run cli -- build`
 without `--include-unreviewed` will refuse to apply it, and the manifest reports
@@ -265,7 +268,7 @@ Verified on this machine, with evidence in `IMPLEMENTATION_NOTES.md`:
 - 89 automated tests pass (`npm test`), plus 4 integration tests against the real
   `Strings_ENG_US.package` (`npm run test:game`).
 - The built package was reopened and compared entry by entry against the source:
-  58,374 / 58,374 entries, exactly 52 changed, 0 unexpected differences, identical
+  58,374 / 58,374 entries, exactly 57 changed, 0 unexpected differences, identical
   resource identity, all 64-bit instance IDs preserved.
 - Output is byte-identical across separate builds (same sha256).
 - The source package was not modified: its sha256 is unchanged.
@@ -284,7 +287,7 @@ Not verified:
 - No systematic clipping check on the longer labels, and the individual labels of
   the main checklist were not each confirmed by eye — the tester's confirmation was
   general, plus the Audio tab probe specifically.
-- **No human has reviewed the 52 translations.** All are machine-drafted and the
+- **No human has reviewed the 57 translations.** All are machine-drafted and the
   manifest reports `reviewedApplied: 0`.
 
 ## Legal and distribution
@@ -292,7 +295,7 @@ Not verified:
 - This tool reads the game files on your own PC and writes a mod. It does not
   distribute game content, and this repository contains no game data.
 - The generated package contains the **English text of the overridden table**
-  (58,322 entries plus the 52 translated ones), because that is how the English
+  (58,317 entries plus the 57 translated ones), because that is how the English
   fallback works. **Keep the built package private** until you have checked what
   you are allowed to redistribute.
 - EA's mod policy requires noncommercial distribution and prohibits suggesting
