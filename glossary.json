@@ -1,5 +1,5 @@
 {
-  "$comment": "Agreed Estonian terminology for this project. Injected into every translation batch and checked against finished translations by `glossary-check`. Machine-proposed from the English corpus with Finnish (official EA translation) as reference, so treat every row as correctable: fix the Estonian, add `accept` alternatives rather than arguing with the checker. `accept` lists equally correct renderings; `note` says when a term means something else in another context; `ambiguous` marks a common English word that also has ordinary-language senses, so the checker only polices it in short labels and trusts the prompt to prevent drift in prose.",
+  "$comment": "Agreed Estonian terminology for this project. Injected into every translation batch and checked against finished translations by `glossary-check`. Machine-proposed from the English corpus with Finnish (official EA translation) as reference, so treat every row as correctable: fix the Estonian, add `accept` alternatives rather than arguing with the checker. `accept` lists equally correct renderings; `note` says when a term means something else in another context; `caseSensitive` keeps a term that is also an ordinary word from matching prose; `ambiguous` marks a common English word that also has ordinary-language senses, so the checker only polices it in short labels and trusts the prompt to prevent drift in prose.",
   "targetLocale": "et-EE",
   "sourceLocale": "en_US",
   "terms": [
@@ -33,7 +33,8 @@
       "accept": [
         "Valikute"
       ],
-      "note": "the settings screen; Finnish uses Asetukset, Estonian 'Valikud' is the established convention"
+      "note": "the settings screen; the lowercase word in a sentence (\"color options\") is not this term",
+      "caseSensitive": true
     },
     {
       "en": "Settings",
@@ -54,7 +55,13 @@
     {
       "en": "Sound",
       "et": "Heli",
-      "note": "audio in general; also a build/buy tag"
+      "note": "the audio tab; the verb in prose (\"doesn't sound interesting\") is not this term",
+      "ambiguous": true,
+      "accept": [
+        "kõla",
+        "kõlab",
+        "heli"
+      ]
     },
     {
       "en": "Music",
@@ -70,7 +77,9 @@
     },
     {
       "en": "Create a Sim",
-      "et": "Loo sim"
+      "et": "Loo sim",
+      "caseSensitive": true,
+      "note": "the screen and its button; the game also writes 'Create A Sim' inside prose, where Estonian inflects it (Simi loomisel) - only the exact button form is checked"
     },
     {
       "en": "Build Mode",
@@ -173,7 +182,9 @@
         "iseloomujoone",
         "iseloomujooned",
         "iseloomujooni"
-      ]
+      ],
+      "exclude": "\\(From [^)]*\\)",
+      "note": "a Sim's personality trait; the moodlet sources shaped \"(From X Trait)\" do not count - see the style rules"
     },
     {
       "en": "mood",
@@ -330,9 +341,12 @@
       "et": "Kood",
       "accept": [
         "koodi",
-        "koodid"
+        "koodid",
+        "spikkerda",
+        "spikerdamine",
+        "petma"
       ],
-      "note": "debug/cheat commands; Finnish keeps 'huijaus', Estonian players say 'kood'",
+      "note": "the debug/cheat menu is 'Kood'; the school interaction 'Cheat' (next to 'Share the Answers', Finnish 'Lunttaa') is 'Spikkerda' - two senses, and the neighbours in the table are what tell them apart",
       "ambiguous": true
     },
     {
@@ -394,6 +408,8 @@
     "Buttons and menu entries are imperative verb phrases (Salvesta, Laadi, Välju), not nouns.",
     "Do not attach Estonian case endings to runtime-inserted names or values; rephrase instead.",
     "Keep English proper nouns that Estonian players know in English (Sim, The Sims 4) rather than inventing translations.",
-    "Prefer the glossary rendering over your own synonym, even when yours reads better in isolation: two screens disagreeing is worse than one screen being slightly stiff."
+    "Prefer the glossary rendering over your own synonym, even when yours reads better in isolation: two screens disagreeing is worse than one screen being slightly stiff.",
+    "Moodlet sources, the 1,588 strings shaped \"(From X)\", are written \"(X tõttu)\": \"(From Snob Trait)\" -> \"(snobi iseloomujoone tõttu)\". The first batches split between this and \"(põhjus: X)\"; this is the agreed form.",
+    "Square brackets hold player-facing text, not codes: translate inside them, keeping the brackets ([Recovered] -> [Taastatud]). Only [PH] and [DNT] are development markers and stay as they are."
   ]
 }

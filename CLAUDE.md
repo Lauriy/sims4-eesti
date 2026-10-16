@@ -83,10 +83,11 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
 - **Variant branches are translated, not deferred.** `{M0.his}{F0.her}` (gender),
   `{S0.is}{P0.are}` (number), `{T1.Mess Around}{DAE1.WooHoo}` (wording style).
   The text after the dot is translated; the `{X0.}` marker is kept. The validator
-  requires every branch group to survive whole, and allows exactly one thing to
-  go: a **complete gender group**, because Estonian has no grammatical gender and
-  EA's own Finnish deletes them (`{M1.his}{F1.her} dreams?` → `…unelmansa?`).
-  Half a group is refused — one gender would have no text.
+  requires every group — consecutive branches sharing an index — to be kept whole
+  or **dropped whole**, on any axis. Dropping is what EA's Finnish does: it deletes
+  gender pairs (`{M1.his}{F1.her} dreams?` → `…unelmansa?`) and drops one of two
+  number groups in the same string. Half a group is refused — the missing variant
+  would render with no text — as is reordering.
 - **Branch content that is a value name is a reference, not text:**
   `{P0.ObjectName}`, `{S2.{S3.ObjectName}}` stay exactly as written (Finnish keeps
   them too). Everything else in a branch is literal text (`{S0.Pack}` →

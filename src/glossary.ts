@@ -40,6 +40,12 @@ export interface GlossaryTerm {
    */
   exclude?: string;
   /**
+   * Match the term's capitalisation exactly: "Options" is the screen, "options"
+   * in a sentence is not. Use it for a term that is also an ordinary lowercase
+   * word. Without it the check is case-insensitive.
+   */
+  caseSensitive?: boolean;
+  /**
    * The English word also has ordinary-language senses ("level of recognition",
    * "cast their lot", "mood lighting"). Such a term is only checked in short
    * strings - labels and buttons, where it is certainly the game term - and only
@@ -116,7 +122,7 @@ function stem(word: string, length = 6): string {
 const LABEL_LENGTH = 80;
 
 function containsTerm(english: string, term: GlossaryTerm): boolean {
-  const { en, exclude, ambiguous } = term;
+  const { en, exclude, ambiguous, caseSensitive } = term;
   if (ambiguous && english.trim().length > LABEL_LENGTH) return false;
   // A single word can collide with ordinary English: "a lot of" is not a
   // building lot, and "money can't buy happiness" is not the Buy button.
@@ -125,7 +131,19 @@ function containsTerm(english: string, term: GlossaryTerm): boolean {
   // must not count as the term "sim".
   const withoutSyntax = english.replace(/\{[^{}]*\}/g, " ").replace(/<[^>]*>/g, " ");
   const escaped = en.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`\\b${escaped}\\b`, "i").test(withoutSyntax);
+  const flags = caseSensitive ? "" : "i";
+  // Not \b: a hyphen joins words into a compound ("Sell-Out",
+  // "Sound-alike"), and the compound is not the term.
+  const match = new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, flags).exec(withoutSyntax);
+  if (!match) return false;
+  // A term inside a longer capitalised phrase is a compound name, not the term
+  // on its own: "Blues Music" is a genre and "Handiness Skill" is a skill's
+  // name, and Estonian renders both without the head noun. Measured: this is
+  // what 15 of the first 26 reports from real translations turned out to be.
+  const before = withoutSyntax.slice(0, match.index);
+  const previousWord = /([A-Za-z][A-Za-z'-]*)\s+$/.exec(before)?.[1];
+  if (previousWord !== undefined && /^[A-Z]/.test(previousWord)) return false;
+  return true;
 }
 
 export interface GlossaryCheckResult {

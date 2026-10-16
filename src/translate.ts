@@ -109,17 +109,18 @@ const STYLE_NOTES = [
   "Return ONLY a JSON object mapping each occurrenceId to the Estonian text: {\"<id>\": \"<text>\", ...}",
   "Do not translate the ids. Do not add or drop entries. Do not explain.",
   "Keep every placeholder exactly as it appears, including its number and spelling: {0.SimFirstName}, {1.String}, {0.Number}, {0.Money}, {0.SimName}, {0.ObjectName}, {0.TimeShort}, {0.Timespan}, {0.DayOfWeekShort}, {0.DayOfWeekLong}, {0.DateShort}, {0.SimFirstNameList} and the other runtime values you will see. Reordering them inside a sentence is fine; changing or dropping one is not.",
-  "Keep escape sequences and bracketed codes exactly: \\n, \\s, [PH], [V], [DNT].",
-  "Mind the difference between a real newline and the two characters backslash+n. In these JSON files a line break in the English is written \\n and means an actual newline character: your translation must contain a real newline there too, not the characters backslash and n. Do the same for leading and trailing newlines - several object names end with one.",
+  "Line breaks appear in two forms and you must give back the form the English uses, as many times as it uses it. Usually the English holds the two characters backslash and n (written \\\\n in the JSON), which the game renders as a line break - write those two characters back, the same number of them. Sometimes it holds a genuine line break (written \\n in the JSON) - write a genuine line break there. The count of each form is checked. Several object names end with one.",
   "Preserve leading and trailing spaces exactly as in the English.",
   "Do not translate: Sim, Sims, The Sims 4, EA, Maxis, and pack or kit names (e.g. Backyard Stuff).",
   "Uppercase English labels are usually buttons or tabs: translate them as short noun phrases or imperatives in normal Estonian capitalisation, not in capitals.",
   "Estonian buttons and menu entries are imperative verb phrases (Salvesta, Laadi, Välju), not nouns.",
   "Do not attach Estonian case endings to names or values that the game inserts at runtime; rephrase instead.",
   "Variant branches look like {M0.his}, {F0.her}, {N0.their}, {S0.is}, {P0.are}, {T1.Mess Around}, {DAE1.WooHoo}. The letters pick the variant - M/F/N is the Sim's gender, S/P is singular or plural, T/DAE is a wording style - and the words after the dot are the text for that variant. Translate that text, keeping the {X0.} marker exactly as it is. Case matters: {T1.vehtailu} mid-sentence, {T1.Vehtailu} at the start of one.",
-  "Gender branches: Estonian has no grammatical gender, so write the same Estonian in the male and female branch - {M0.tema}{F0.tema} - or drop the whole group and phrase the sentence without it, the way EA's own Finnish does ({M1.his}{F1.her} dreams? becomes ...toteuttamaan unelmansa?). Never keep one branch of a pair and drop the other: one gender would be left with no text. Plural branches (S/P) must both stay, because Estonian distinguishes number too.",
+  "A group of variants - {M0.his}{F0.her}, {S0.is}{P0.are}, {T1.Mess Around}{DAE1.WooHoo} - is kept whole or dropped whole. Estonian has no grammatical gender, so the usual move is to write one wording in the male and female branch ({M0.tema}{F0.tema}) or to drop the pair and phrase the sentence without it, the way EA's own Finnish does ({M1.his}{F1.her} dreams? becomes ...toteuttamaan unelmansa?). A number or wording-style group may also go whole when the Estonian sentence does not need it - Finnish drops one of the two number groups in the same string. Never keep one member of a group and drop the other: the missing variant renders with no text at all.",
   "If a branch contains a value name rather than words - {P0.ObjectName}, {S2.{S3.ObjectName}} - leave that part exactly as it is; the game substitutes it at runtime.",
   "Markup tags (<b>, </b>, <span class=\"pink\">, <font color=\"#EC262E\">, <i>, <ul>, <li>, <a href=\"...\">) must all be kept, character for character, including attribute values - translate only the text between them. If a colour or a URL would read better localized, leave the English one: it will be reported rather than applied.",
+  "Text in square brackets is player-facing text, not a code: write the Estonian inside the brackets, keeping the brackets ([Recovered] -> [Taastatud]). Only [PH] and [DNT] are development markers and stay as they are.",
+  "Moodlet sources, the 1,588 strings shaped \"(From X)\", are written \"(X tõttu)\" in Estonian - \"(From Snob Trait)\" -> \"(snobi iseloomujoone tõttu)\", \"(From Mixology Skill)\" -> \"(miksimise oskuse tõttu)\". Use this form and no other: half the first batches chose \"(põhjus: X)\" and half chose this, which is the drift the glossary exists to prevent.",
   "Pronouns the game inserts - {0.SimPronounSubjective}, {0.SimPronounObjective}, {0.SimPronounPossessiveDependent}, {0.SimPronounReflexive}, with or without a |xxUpper modifier - render as English words, because the game's own text is English here. Replace them with the Estonian word instead (ta, tema, teda, oma), matching the capitalisation the modifier asked for: {0.SimPronounSubjective|xxUpper} can also Mentor others -> Ta võib ka teisi õpetada. Keeping the placeholder is allowed if you cannot word it, but the player will see an English pronoun.",
   "If a string cannot be translated without breaking the rules above, leave it out of the answer rather than guessing - it will stay English and be reported.",
 ];
@@ -143,7 +144,7 @@ function classify(sourceText: string): { kind: string; notes: string[] } {
     );
   }
   if (syntax.branches.some((branch) => !isGenderBranch(branch))) {
-    notes.push("has variant branches that must all be kept (singular/plural or wording style)");
+    notes.push("has variant branches: keep each group whole, or drop it whole");
   }
   if (syntax.branchValues.length > 0) {
     notes.push("a branch contains a runtime value name: leave that part exactly as it is");
