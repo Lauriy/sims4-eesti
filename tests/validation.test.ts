@@ -77,15 +77,43 @@ describe("syntax analysis", () => {
     );
   });
 
-  it("refuses to drop a plural branch, which Estonian needs too", () => {
+  it("refuses half a variant group, on any axis", () => {
     assert.deepEqual(
-      codes(validateTranslation(input({ sourceText: "{S0.is}{P0.are} valmis", text: "valmis" }))),
+      codes(validateTranslation(input({ sourceText: "{S0.is}{P0.are} valmis", text: "{S0.on} valmis" }))),
       ["branch-mismatch"]
     );
+    // Collapsing is always available: one Estonian wording in both variants.
     assert.deepEqual(
       codes(
         validateTranslation(
           input({ sourceText: "{S0.is}{P0.are} valmis", text: "{S0.on}{P0.on} valmis" })
+        )
+      ),
+      []
+    );
+  });
+
+  it("allows a whole group to go, on any axis, as the Finnish translation drops them", () => {
+    // EA's Finnish keeps one of the two number groups here and drops the other.
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({
+            sourceText: "{0.Number} {S0.Sim}{P0.Sims} who {S0.is}{P0.are} female Teen",
+            text: "{0.Number} {S0.naissoost teismeline}{P0.naissoost teismelist}",
+          })
+        )
+      ),
+      []
+    );
+    // The same with a repeated gender pair: the possessive goes, the noun stays.
+    assert.deepEqual(
+      codes(
+        validateTranslation(
+          input({
+            sourceText: "{M0.his}{F0.her} rasedus ja {M0.father}{F0.mother}",
+            text: "rasedus ja {M0.isaks}{F0.emaks}",
+          })
         )
       ),
       []

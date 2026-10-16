@@ -225,8 +225,19 @@ function classifyExpression(expression: string, out: SyntaxAnalysis): string | u
       const end = matchBrace(content, at);
       if (end < 0) return `nested braces in ${JSON.stringify(expression)}`;
       const nested = content.slice(at, end + 1);
+      // Recorded as required content and parsed for its own syntax, but its
+      // selectors are not added to the top-level list: a nested pair must not be
+      // taken apart, and `branchValues` already requires the expression verbatim.
       out.branchValues.push(nested);
-      const problem = classifyExpression(nested, out);
+      const inner: SyntaxAnalysis = {
+        placeholders: [],
+        runtimeValues: [],
+        branches: [],
+        branchValues: [],
+        tags: [],
+        tokens: [],
+      };
+      const problem = classifyExpression(nested, inner);
       if (problem) return problem;
       cursor = end + 1;
     }
@@ -304,63 +315,87 @@ export function analyzeSyntax(text: string): SyntaxAnalysis {
 }
 
 /**
+ * One token per variant group: consecutive branches that share an index and have
+ * distinct letters - `{M0.his}{F0.her}`, `{S0.is}{P0.are}`, `{T1.x}{DAE1.y}`.
+ * A repeated letter starts a new group, so `{M0.}{F0.}{M0.}{F0.}` is two of them.
+ */
+interface BranchGroup {
+  selectors: string[];
+  letters: string[];
+}
+
+function groupBranches(branches: VariantBranch[]): BranchGroup[] {
+  const groups: BranchGroup[] = [];
+  let index = 0;
+  while (index < branches.length) {
+    const group: BranchGroup = {
+      selectors: [],
+      letters: [],
+    };
+    const first = branches[index]!;
+    group.selectors.push(first.selector);
+    group.letters.push(...first.letters);
+    let next = index + 1;
+    while (next < branches.length) {
+      const candidate = branches[next]!;
+      if (candidate.index !== first.index) break;
+      const letters = [...candidate.letters];
+      if (letters.some((letter) => group.letters.includes(letter))) break;
+      group.selectors.push(candidate.selector);
+      group.letters.push(...letters);
+      next += 1;
+    }
+    groups.push(group);
+    index = next;
+  }
+  return groups;
+}
+
+const describeGroup = (group: BranchGroup) => group.selectors.map((selector) => `{${selector}.…}`).join("");
+
+/**
  * Whether the translation's variant skeleton can be accepted, and why not when it
- * cannot. The selectors must appear in the same order; a *complete* gender group
- * may be dropped, because Estonian has no grammatical gender and EA's Finnish
- * deletes them too - but half a group would leave one gender with no text at all.
+ * cannot.
+ *
+ * The rule is one rule, not one per axis: **every group of variants is kept whole
+ * or dropped whole**, and the groups that are kept stay in the order the English
+ * has them. Dropping is legitimate and EA's own Finnish does it on every axis -
+ * `{M1.his}{F1.her} dreams?` loses its possessive, and
+ * `{0.Number} {S0.Sim}{P0.Sims} who {S0.is}{P0.are} female Teen` keeps one of its
+ * two number groups and drops the other. Half a group is never legitimate: the
+ * variant that is missing renders with no text at all.
+ *
+ * Nested branches are not tokens here - `{S2.{S3.ObjectName}}` contributes only
+ * `S2`, because the nested expression is required verbatim as a value reference
+ * by the placeholder check. That keeps a nested pair from being taken apart.
  */
 export function branchProblem(source: VariantBranch[], translation: VariantBranch[]): string | undefined {
-  const runs = (list: VariantBranch[]): VariantBranch[][] => {
-    const out: VariantBranch[][] = [];
-    for (const branch of list) {
-      const last = out[out.length - 1];
-      const joins =
-        last !== undefined &&
-        isGenderBranch(branch) &&
-        last.every(isGenderBranch) &&
-        last[0]!.index === branch.index;
-      if (joins) last!.push(branch);
-      else out.push([branch]);
-    }
-    return out;
-  };
-  const sourceRuns = runs(source);
-  const translationRuns = runs(translation);
-  const labels = (list: VariantBranch[]) => list.map((branch) => `{${branch.selector}.…}`).join("");
+  const expected = groupBranches(source);
+  const found = groupBranches(translation);
+  const sameGroup = (a: BranchGroup, b: BranchGroup) =>
+    a.selectors.length === b.selectors.length && a.selectors.every((selector, i) => selector === b.selectors[i]);
 
   let i = 0;
   let j = 0;
-  while (i < sourceRuns.length && j < translationRuns.length) {
-    const expected = sourceRuns[i]!;
-    const found = translationRuns[j]!;
-    if (
-      expected.length === found.length &&
-      expected.every((branch, k) => branch.selector === found[k]!.selector)
-    ) {
+  while (i < expected.length) {
+    const wanted = expected[i]!;
+    const actual = found[j];
+    if (actual && sameGroup(wanted, actual)) {
       i += 1;
       j += 1;
       continue;
     }
-    if (isGenderBranch(found[0]!) && expected.every(isGenderBranch)) {
+    if (actual && wanted.letters.some((letter) => actual.letters.includes(letter))) {
       return (
-        `a gender variant was dropped only partly: the English has ${labels(expected)} where the ` +
-        `translation has ${labels(found)}; the whole group must go, or none of it`
+        `a variant group was kept only partly: the English has ${describeGroup(wanted)} where the ` +
+        `translation has ${describeGroup(actual)}; the whole group must be kept, or dropped whole`
       );
     }
-    if (expected.every(isGenderBranch)) {
-      i += 1;
-      continue;
-    }
-    return `variant branches differ: the English has ${labels(expected)} where the translation has ${found.length ? labels(found) : "nothing"}`;
+    i += 1; // dropped whole, which is allowed
   }
-  for (; i < sourceRuns.length; i += 1) {
-    const expected = sourceRuns[i]!;
-    if (!expected.every(isGenderBranch)) {
-      return `the translation drops ${labels(expected)}, which is not a gender variant and must be kept`;
-    }
-  }
-  if (j < translationRuns.length) {
-    return `the translation has extra variant branches (${labels(translationRuns.slice(j).flat())}) that the English does not have`;
+  if (j < found.length) {
+    const extra = found[j]!;
+    return `the translation has variant branches the English does not have (${describeGroup(extra)})`;
   }
   return undefined;
 }
