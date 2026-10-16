@@ -454,7 +454,8 @@ installation-wide catalog, source diffing and bulk translation pipeline are buil
 what remains of it is the review loop and the community side. See
 `Sims4_Eesti_Implementation_Brief.md`, `PHASE2_DESIGN.md` and
 `IMPLEMENTATION_NOTES.md`. What the project learned the hard way is in
-`LESSONS.md`.
+`LESSONS.md`, and how the remaining
+work is sequenced is in `RUN_PLAN.md`.
 
 ---
 

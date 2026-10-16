@@ -62,6 +62,8 @@ export interface BatchEntry {
     notes?: string[];
     /** Same string in other languages, official where available. Hints, not authority. */
     references?: Record<string, string>;
+    /** This exact English text, already rendered in Estonian elsewhere in the installation. A precedent, not a rule. */
+    sameTextElsewhere?: { et: string; packageLabel: string }[];
     /** Estonian already chosen for strings on the same screen, nearest first. Measured: 40% of the strings still to translate have one, and the share grows as batches land. */
     alreadyTranslated?: { en: string; et: string }[];
   };
@@ -274,6 +276,18 @@ export function exportBatches(options: ExportOptions): ExportResult {
   });
 
   const byTable = tableIndex(catalog, translations);
+  // Same English text, already translated somewhere else in the installation.
+  // Currently 2.9% of the strings left in the mods, and the share grows as the
+  // game's own text is finished first - which is the concrete reason the mods go
+  // last: they inherit the game's vocabulary for the words they share with it.
+  const sameText = new Map<string, { et: string; packageLabel: string }[]>();
+  for (const occurrence of catalog.occurrences) {
+    const estonian = translations[occurrence.occurrenceId];
+    if (estonian === undefined) continue;
+    const list = sameText.get(occurrence.sourceText) ?? [];
+    list.push({ et: estonian, packageLabel: occurrence.packageLabel });
+    sameText.set(occurrence.sourceText, list);
+  }
   const limited = options.limit ? candidates.slice(0, options.limit) : candidates;
   const maxLanguages = options.maxReferenceLanguages ?? 3;
 
@@ -401,6 +415,11 @@ export function exportBatches(options: ExportOptions): ExportResult {
           short ? 12 : 2
         ).map((item) => ({ en: item.text, et: item.et }));
 
+        // The same English text, translated somewhere else in the installation.
+        // It is offered, never applied: "High" in a drug mod and "High" as a
+        // build/buy quality are the same string and different words, and only a
+        // reader of this entry can tell which is which.
+        const elsewhere = sameText.get(occurrence.sourceText) ?? [];
         const others = alsoAt.get(occurrence.occurrenceId);
         return {
           occurrenceId: occurrence.occurrenceId,
@@ -415,6 +434,13 @@ export function exportBatches(options: ExportOptions): ExportResult {
             englishBytes: Buffer.byteLength(occurrence.sourceText, "utf8"),
             ...(where.notes.length > 0 ? { notes: where.notes } : {}),
             ...(Object.keys(references).length > 0 ? { references } : {}),
+            ...(elsewhere.length > 0
+              ? {
+                  sameTextElsewhere: elsewhere
+                    .slice(0, 2)
+                    .map((item) => ({ et: item.et, packageLabel: item.packageLabel })),
+                }
+              : {}),
             ...(chosenNearby.length > 0 ? { alreadyTranslated: chosenNearby } : {}),
           },
         };
