@@ -17,6 +17,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { TOOL_NAME, TOOL_VERSION, loadCatalog, writeJsonAtomic, type Catalog } from "./catalog.js";
+import { flatten, loadReferenceFiles, referencesFromPackage } from "./references.js";
 import {
   loadMetadata,
   loadTranslations,
@@ -50,6 +51,10 @@ export interface BatchEntry {
     /** UTF-8 bytes of the English, as a rough budget for how much room there is. */
     englishBytes: number;
     notes?: string[];
+    /** Same string in other languages, official where available. Hints, not authority. */
+    references?: Record<string, string>;
+    /** Neighbouring strings already translated in this project, for consistency of terms. */
+    alreadyTranslated?: { en: string; et: string }[];
   };
 }
 
@@ -74,12 +79,21 @@ export interface ExportOptions {
   includePackages?: string[];
   /** Skip these package labels (e.g. BASE, when doing the packs first). */
   excludePackages?: string[];
+  /** Directories or files holding reference translations (e.g. work/reference-fi). */
+  referenceDirs?: string[];
+  /** How many reference languages to show per entry (default 3). */
+  maxReferenceLanguages?: number;
 }
 
 export interface ExportResult {
   batchPaths: string[];
   totalStrings: number;
   perPackage: Record<string, number>;
+  /** Strings with gender branches or markup: left English on purpose, not exported. */
+  deferredCount: number;
+  /** Reference locales seen, with where they came from. */
+  referenceSources: Record<string, string[]>;
+  stubLocalesDropped: number;
 }
 
 const STYLE_NOTES = [
@@ -172,17 +186,46 @@ export function exportBatches(options: ExportOptions): ExportResult {
 
   const byTable = tableIndex(catalog);
   const limited = options.limit ? candidates.slice(0, options.limit) : candidates;
+  const maxLanguages = options.maxReferenceLanguages ?? 3;
+
+  // Reference translations: files the user supplied (the game's own Finnish, say),
+  // then whatever sibling locales the packages themselves carry. Both are matched
+  // by string key.
+  const englishByKey = new Map<string, string>();
+  for (const occurrence of catalog.occurrences) {
+    if (!englishByKey.has(occurrence.stringKey)) englishByKey.set(occurrence.stringKey, occurrence.sourceText);
+  }
+  const fileReferences = options.referenceDirs?.length
+    ? loadReferenceFiles(options.referenceDirs, englishByKey)
+    : { byLocale: new Map(), sources: new Map(), stubLocalesDropped: 0 };
+  const fileRefsByKey = flatten(fileReferences.byLocale, maxLanguages);
+  const packageRefs = new Map<string, Map<string, Record<string, string>>>();
+  const packagesNeeded = new Set(limited.map((occurrence) => occurrence.packageLabel));
+  let stubLocalesDropped = fileReferences.stubLocalesDropped;
+  for (const facts of catalog.packages) {
+    if (!packagesNeeded.has(facts.label) || !existsSync(facts.path)) continue;
+    const { byKey, stubLocalesDropped: dropped } = referencesFromPackage(facts.path, maxLanguages);
+    stubLocalesDropped += dropped;
+    if (byKey.size > 0) packageRefs.set(facts.label, byKey);
+  }
+
+  // Strings this pipeline cannot carry - gender branches, markup - are left out of
+  // the batches rather than translated and then refused at import: the outcome is
+  // the same (they stay English) and it saves the work.
+  const deferred = limited.filter((occurrence) => analyzeSyntax(occurrence.sourceText).problem !== undefined);
+  const translatable = limited.filter((occurrence) => analyzeSyntax(occurrence.sourceText).problem === undefined);
+  const perPackage: Record<string, number> = {};
+  for (const occurrence of translatable) {
+    perPackage[occurrence.packageLabel] = (perPackage[occurrence.packageLabel] ?? 0) + 1;
+  }
   mkdirSync(options.outDir, { recursive: true });
   const createdAt = new Date().toISOString();
   const batchPaths: string[] = [];
-  const perPackage: Record<string, number> = {};
 
-  for (let start = 0; start < limited.length; start += batchSize) {
-    const slice = limited.slice(start, start + batchSize);
-    for (const occurrence of slice) {
-      perPackage[occurrence.packageLabel] = (perPackage[occurrence.packageLabel] ?? 0) + 1;
-    }
-    const index = Math.floor(start / batchSize) + 1;
+  for (let offset = 0; offset < translatable.length; offset += batchSize) {
+    const slice = translatable.slice(offset, offset + batchSize);
+    const index = Math.floor(offset / batchSize) + 1;
+
     const batch: BatchFile = {
       schemaVersion: BATCH_SCHEMA_VERSION,
       createdAt,
@@ -190,22 +233,56 @@ export function exportBatches(options: ExportOptions): ExportResult {
       notes: [
         ...STYLE_NOTES,
         "See glossary.json in the repository root for agreed vocabulary and style rules.",
+        "The context block describes each string: what it reads as, the strings around it in the game's own file, and reference translations in other languages. The references are hints, not authority - Estonian is not Finnish, and a professional translation of the same string can still be the wrong shape for Estonian.",
       ],
       entries: slice.map((occurrence) => {
         const where = classify(occurrence.sourceText);
         const analysis = analyzeSyntax(occurrence.sourceText);
         const { before, after } = neighbours(byTable, occurrence.resourceTgi, occurrence.entryIndex);
+
+        // Context is spent where ambiguity lives. A one-word label such as "Sound"
+        // or "Home" needs the neighbours and the references to be translated at all;
+        // a full sentence carries its own meaning, so it gets the cheap version and
+        // keeps the batch (and the bill) smaller.
+        const short = /label|item name|button|tab|moodlet source/.test(where.kind);
+        const limit = short ? 3 : 1;
+
+        const references: Record<string, string> = {};
+        const fromFiles = fileRefsByKey.get(occurrence.stringKey);
+        if (fromFiles) {
+          for (const [locale, text] of Object.entries(fromFiles).slice(0, limit)) references[locale] = text;
+        }
+        const fromPackage = packageRefs.get(occurrence.packageLabel)?.get(occurrence.stringKey);
+        if (fromPackage) {
+          for (const [locale, text] of Object.entries(fromPackage).slice(0, limit)) {
+            if (references[locale] === undefined) references[locale] = text;
+          }
+        }
+
+        const translatedNeighbours: { en: string; et: string }[] = [];
+        if (short) {
+          for (const neighbour of [...(before ?? []), ...(after ?? [])]) {
+            const found = catalog.occurrences.find(
+              (other) => other.resourceTgi === occurrence.resourceTgi && other.sourceText === neighbour
+            );
+            const et = found ? translations[found.occurrenceId] : undefined;
+            if (et !== undefined) translatedNeighbours.push({ en: neighbour, et });
+          }
+        }
+
         return {
           occurrenceId: occurrence.occurrenceId,
           sourceText: occurrence.sourceText,
           context: {
             package: occurrence.packageLabel,
             kind: where.kind,
-            ...(before ? { before } : {}),
-            ...(after ? { after } : {}),
+            ...(before ? { before: short ? before : before.slice(-1) } : {}),
+            ...(after ? { after: short ? after : after.slice(0, 1) } : {}),
             placeholders: analysis.placeholders,
             englishBytes: Buffer.byteLength(occurrence.sourceText, "utf8"),
             ...(where.notes.length > 0 ? { notes: where.notes } : {}),
+            ...(Object.keys(references).length > 0 ? { references } : {}),
+            ...(translatedNeighbours.length > 0 ? { alreadyTranslated: translatedNeighbours } : {}),
           },
         };
       }),
@@ -217,7 +294,7 @@ export function exportBatches(options: ExportOptions): ExportResult {
 
   const instructions = `# Translation batches
 
-${batchPaths.length} batch file(s), ${limited.length} strings, target locale et-EE.
+${batchPaths.length} batch file(s), ${translatable.length} strings, target locale et-EE.
 
 For each batch file, produce a file next to it named \`batch-NNN.translated.json\`
 containing a single JSON object that maps every \`occurrenceId\` in the batch to its
@@ -235,7 +312,14 @@ npm run cli -- translate import --catalog ${options.catalogPath} --in ${options.
 `;
   writeFileSync(join(options.outDir, "INSTRUCTIONS.md"), instructions, "utf8");
 
-  return { batchPaths, totalStrings: limited.length, perPackage };
+  return {
+    batchPaths,
+    totalStrings: translatable.length,
+    perPackage,
+    deferredCount: deferred.length,
+    referenceSources: Object.fromEntries(fileReferences.sources),
+    stubLocalesDropped,
+  };
 }
 
 export interface ImportOptions {

@@ -167,6 +167,12 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       "exclude-packages": { help: "Skip these package labels, comma-separated (e.g. BASE)" },
       "batch-size": { help: "Strings per batch file (default 400)" },
       limit: { help: "Stop after this many strings in total" },
+      references: {
+        help:
+          "Files or directories holding reference translations, comma-separated " +
+          "(e.g. work/reference-fi). Packages' own sibling languages are used automatically",
+      },
+      "max-reference-languages": { help: "Reference languages per entry (default 3)" },
       translations: { help: "Translations file, to skip what is already done" },
       ...COMMON_CONFIG_FLAG,
     },
@@ -489,12 +495,31 @@ function runTranslateExport(parsed: ParsedArgs, config: Config): number {
     outDir,
     ...(parsed.values.get("batch-size") ? { batchSize: Number(parsed.values.get("batch-size")) } : {}),
     ...(parsed.values.get("limit") ? { limit: Number(parsed.values.get("limit")) } : {}),
+    ...(parsed.values.get("references")
+      ? { referenceDirs: parsed.values.get("references")!.split(",").map((item) => resolve(item.trim())) }
+      : {}),
+    ...(parsed.values.get("max-reference-languages")
+      ? { maxReferenceLanguages: Number(parsed.values.get("max-reference-languages")) }
+      : {}),
     ...(packages ? { includePackages: packages } : {}),
     ...(excludePackages ? { excludePackages } : {}),
   });
 
   console.log(`Wrote ${result.batchPaths.length} batch file(s) to ${outDir}`);
   console.log(`  strings to translate: ${result.totalStrings}`);
+  if (result.deferredCount > 0) {
+    console.log(`  left English on purpose (gender branches, markup): ${result.deferredCount}`);
+  }
+  const locales = Object.keys(result.referenceSources);
+  if (locales.length > 0) {
+    console.log(`  reference languages: ${locales.join(", ")}`);
+    for (const [locale, sources] of Object.entries(result.referenceSources)) {
+      console.log(`    ${locale}: ${sources.length} file(s)`);
+    }
+  }
+  if (result.stubLocalesDropped > 0) {
+    console.log(`  locale tables dropped as English stubs: ${result.stubLocalesDropped}`);
+  }
   for (const [label, count] of Object.entries(result.perPackage).sort((a, b) => b[1] - a[1])) {
     console.log(`    ${label.padEnd(28)} ${String(count).padStart(7)}`);
   }

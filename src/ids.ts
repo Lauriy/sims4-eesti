@@ -124,3 +124,39 @@ export function parseOccurrenceId(occurrenceId: string): OccurrenceIdParts {
 export function localeByteOf(instance: bigint): number {
   return Number((instance >> 56n) & 0xffn);
 }
+
+/**
+ * Two-letter code for a string-table locale byte, i.e. the high byte of a table's
+ * instance. Values follow the game's own `StringTableLocale` enumeration.
+ */
+const LOCALE_CODES: Record<number, string> = {
+  0x00: "en",
+  0x01: "zh-CN",
+  0x02: "zh-TW",
+  0x03: "cs",
+  0x04: "da",
+  0x05: "nl",
+  0x06: "fi",
+  0x07: "fr",
+  0x08: "de",
+  0x0b: "it",
+  0x0c: "ja",
+  0x0d: "ko",
+  0x0e: "no",
+  0x0f: "pl",
+  0x11: "pt",
+  0x12: "ru",
+  0x13: "es",
+  0x15: "sv",
+};
+
+export function localeCodeOf(localeByte: number): string {
+  return LOCALE_CODES[localeByte] ?? `0x${localeByte.toString(16).padStart(2, "0")}`;
+}
+
+/**
+ * Languages to show a translator, best first. Finnish leads deliberately: it is
+ * Finno-Ugric like Estonian, has no grammatical gender and uses cases, so it
+ * shows how a professional team solved the same problems on the same strings.
+ */
+export const REFERENCE_LOCALE_PREFERENCE = ["fi", "de", "ru", "sv", "pl"];
