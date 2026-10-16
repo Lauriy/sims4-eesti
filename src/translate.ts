@@ -26,6 +26,7 @@ import {
   type TranslationMap,
 } from "./translations.js";
 import {
+  analyzeSyntax,
   validateTranslation,
   type TranslationState,
   type ValidationIssue,
@@ -36,6 +37,20 @@ export const BATCH_SCHEMA_VERSION = 1;
 export interface BatchEntry {
   occurrenceId: string;
   sourceText: string;
+  /** Where this string sits, for a translator who cannot see the game. */
+  context: {
+    package: string;
+    /** What kind of thing it reads as, from its shape. */
+    kind: string;
+    /** Strings immediately before and after it in the same table: Maxis groups UI text in blocks, so neighbours identify the screen. */
+    before?: string[];
+    after?: string[];
+    /** Placeholders that must survive, verbatim and in this multiset. */
+    placeholders: string[];
+    /** UTF-8 bytes of the English, as a rough budget for how much room there is. */
+    englishBytes: number;
+    notes?: string[];
+  };
 }
 
 export interface BatchFile {
@@ -81,6 +96,65 @@ const STYLE_NOTES = [
   "If a string cannot be translated without breaking the rules above, leave it out of the answer rather than guessing - it will stay English and be reported.",
 ];
 
+/**
+ * What a string reads as, judged only from its own shape. A translator who cannot
+ * see the game needs at least this much: a one-word English label like "Sound"
+ * gives no clue whether it is a tab, a tag or a category heading.
+ */
+function classify(sourceText: string): { kind: string; notes: string[] } {
+  const notes: string[] = [];
+  const trimmed = sourceText.trim();
+  const words = trimmed.split(/\s+/).filter(Boolean).length;
+
+  if (/^\(From /.test(trimmed)) {
+    return { kind: "moodlet source, shown in brackets after the mood text", notes };
+  }
+  if (/^[^a-z]*[A-Z][^a-z]*$/.test(trimmed) && trimmed.length > 1) {
+    notes.push("rendered in capitals in the interface; translate as a normal-cased label");
+    return { kind: "label, shown in capitals", notes };
+  }
+  if (words <= 3 && trimmed.length <= 24 && !/[.!?]$/.test(trimmed)) {
+    return { kind: "short label: button, tab, menu entry or item name", notes };
+  }
+  if (/[.!?]$/.test(trimmed) || words > 12) {
+    return { kind: "sentence or paragraph: notification, tooltip or description", notes };
+  }
+  return { kind: "phrase", notes };
+}
+
+/**
+ * The two strings either side in the same table, which is where UI blocks live.
+ *
+ * Built once for the whole catalog: doing this per entry would be quadratic, and
+ * the base game alone is 58,374 entries.
+ */
+function tableIndex(catalog: Catalog): Map<string, { text: string; position: number }[]> {
+  const byTable = new Map<string, { text: string; position: number }[]>();
+  for (const occurrence of catalog.occurrences) {
+    const list = byTable.get(occurrence.resourceTgi) ?? [];
+    list.push({ text: occurrence.sourceText, position: occurrence.entryIndex });
+    byTable.set(occurrence.resourceTgi, list);
+  }
+  for (const list of byTable.values()) list.sort((a, b) => a.position - b.position);
+  return byTable;
+}
+
+function neighbours(
+  byTable: Map<string, { text: string; position: number }[]>,
+  resourceTgi: string,
+  entryIndex: number
+): { before?: string[]; after?: string[] } {
+  const list = byTable.get(resourceTgi) ?? [];
+  const position = list.findIndex((item) => item.position === entryIndex);
+  if (position < 0) return {};
+  const before = list.slice(Math.max(0, position - 2), position).map((item) => item.text);
+  const after = list.slice(position + 1, position + 3).map((item) => item.text);
+  return {
+    ...(before.length > 0 ? { before } : {}),
+    ...(after.length > 0 ? { after } : {}),
+  };
+}
+
 export function exportBatches(options: ExportOptions): ExportResult {
   const catalog: Catalog = loadCatalog(options.catalogPath);
   const translations = loadTranslations(options.translationsPath);
@@ -95,6 +169,7 @@ export function exportBatches(options: ExportOptions): ExportResult {
     return true;
   });
 
+  const byTable = tableIndex(catalog);
   const limited = options.limit ? candidates.slice(0, options.limit) : candidates;
   mkdirSync(options.outDir, { recursive: true });
   const createdAt = new Date().toISOString();
@@ -115,10 +190,24 @@ export function exportBatches(options: ExportOptions): ExportResult {
         ...STYLE_NOTES,
         "See glossary.json in the repository root for agreed vocabulary and style rules.",
       ],
-      entries: slice.map((occurrence) => ({
-        occurrenceId: occurrence.occurrenceId,
-        sourceText: occurrence.sourceText,
-      })),
+      entries: slice.map((occurrence) => {
+        const where = classify(occurrence.sourceText);
+        const analysis = analyzeSyntax(occurrence.sourceText);
+        const { before, after } = neighbours(byTable, occurrence.resourceTgi, occurrence.entryIndex);
+        return {
+          occurrenceId: occurrence.occurrenceId,
+          sourceText: occurrence.sourceText,
+          context: {
+            package: occurrence.packageLabel,
+            kind: where.kind,
+            ...(before ? { before } : {}),
+            ...(after ? { after } : {}),
+            placeholders: analysis.placeholders,
+            englishBytes: Buffer.byteLength(occurrence.sourceText, "utf8"),
+            ...(where.notes.length > 0 ? { notes: where.notes } : {}),
+          },
+        };
+      }),
     };
     const path = join(options.outDir, `batch-${String(index).padStart(3, "0")}.json`);
     writeJsonAtomic(path, batch);
