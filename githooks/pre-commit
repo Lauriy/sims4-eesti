@@ -1,0 +1,37 @@
+#!/bin/sh
+# Refuse to commit files that must stay on this machine, and refuse to commit
+# anything that looks like a credential.
+#
+# Activated by:  git config core.hooksPath githooks
+# Bypass is possible (git commit --no-verify) — don't.
+
+set -e
+
+blocked_paths='^(\.env|claude-deepseek-windows\.sh|.*\.pem|.*\.key|.*\.p12|.*\.pfx|id_rsa.*|id_ed25519.*|\.npmrc|\.netrc)$'
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+if [ -z "$staged" ]; then
+  exit 0
+fi
+
+blocked=$(printf '%s\n' "$staged" | grep -E "$blocked_paths" || true)
+if [ -n "$blocked" ]; then
+  echo "pre-commit: refusing to commit files that must stay local:" >&2
+  printf '%s\n' "$blocked" | sed 's/^/  /' >&2
+  echo "If one of these is genuinely safe to publish, rename it or adjust this hook." >&2
+  exit 1
+fi
+
+# Look at added lines only, then strip the diff marker before matching.
+#
+# The token patterns require a full-length value on purpose: a file that merely
+# *documents* a variable name (ANTHROPIC_AUTH_TOKEN=, GH_PAT=<set>) must not trip
+# this, or documentation about secrets becomes impossible to commit.
+if git diff --cached -U0 -- . | grep -E '^\+' | grep -vE '^\+\+\+' |
+  grep -Eq '(ghp_[A-Za-z0-9]{20,}|gho_[A-Za-z0-9]{20,}|ghs_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,}|ANTHROPIC_AUTH_TOKEN[[:space:]]*=[[:space:]]*["'"'"'`]?[A-Za-z0-9_-]{16,}|-----BEGIN [A-Z ]*PRIVATE KEY-----)'; then
+  echo "pre-commit: staged changes look like they contain a credential." >&2
+  echo "Move it to .env (git-ignored) or a secret store, then stage again." >&2
+  exit 1
+fi
+
+exit 0

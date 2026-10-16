@@ -1,0 +1,9 @@
+{
+  "$comment": "Copy to config.json to set defaults. Command-line flags always override these. Every path may be absolute or relative to the directory you run the tool from.",
+  "catalogPath": "work/base/catalog.json",
+  "translationsPath": "translations/et-EE.json",
+  "metadataPath": "translations/metadata.json",
+  "outPackage": "dist/Sims4_Eesti.package",
+  "modsDir": null,
+  "deployStatePath": "work/deploy-state.json"
+}

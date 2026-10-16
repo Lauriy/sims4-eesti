@@ -1,0 +1,28 @@
+{
+  "name": "sims4-eesti",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Unofficial Estonian text-translation prototype for The Sims 4, built from local English game files.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "bin": {
+    "sims4-eesti": "./src/cli.ts"
+  },
+  "scripts": {
+    "cli": "tsx src/cli.ts",
+    "build:ts": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:game": "tsx --test tests/game-integration.test.ts"
+  },
+  "dependencies": {
+    "@s4tk/compression": "0.2.0",
+    "@s4tk/models": "0.6.14"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

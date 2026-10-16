@@ -1,0 +1,9 @@
+# Shell scripts must keep LF endings: a CRLF shebang breaks them in Git for Windows.
+githooks/* text eol=lf
+*.sh text eol=lf
+
+# PowerShell scripts are happiest with CRLF on Windows.
+*.ps1 text eol=crlf
+
+# Never normalise binary artifacts (built packages, test fixtures).
+*.package binary

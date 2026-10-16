@@ -1,0 +1,28 @@
+{
+  "$comment": "Estonian terminology chosen for the Phase 1 prototype. Not yet enforced by validation: this is the agreed vocabulary that translations should follow, and it is what Phase 3/4 glossary checks will be built from.",
+  "targetLocale": "et-EE",
+  "sourceLocale": "en_US",
+  "terms": [
+    { "en": "New Game", "et": "Uus mäng", "note": "main menu" },
+    { "en": "Load Game", "et": "Laadi mäng", "note": "main menu and in-game menu" },
+    { "en": "Save Game", "et": "Salvesta mäng", "note": "verb form matches the Estonian UI convention of imperative buttons" },
+    { "en": "Resume", "et": "Jätka", "note": "same word as Continue; Estonian uses one verb for both" },
+    { "en": "Continue", "et": "Jätka" },
+    { "en": "Options", "et": "Valikud" },
+    { "en": "Game Options", "et": "Mängu valikud" },
+    { "en": "Graphics", "et": "Graafika" },
+    { "en": "Sound", "et": "Heli" },
+    { "en": "Manage Worlds", "et": "Halda maailmu", "note": "\"world\" in The Sims 4 is the neighbourhood screen: maailm, not ilm" },
+    { "en": "Create a Sim", "et": "Loo sim", "note": "\"Sim\" stays capitalised as a proper noun in Estonian text too; no case ending is attached to it" },
+    { "en": "Build Mode", "et": "Ehitusrežiim" },
+    { "en": "Live Mode", "et": "Elurežiim" },
+    { "en": "Households", "et": "Leibkonnad", "note": "Estonian \"leibkond\" is the standard term for a household unit" },
+    { "en": "Exit Game", "et": "Välju mängust" },
+    { "en": "Days till age up", "et": "Päevi vananemiseni", "note": "kept as a noun phrase so the number can follow the colon" }
+  ],
+  "style": [
+    "Buttons and menu entries are imperative verb phrases (Salvesta, Laadi, Välju), not nouns.",
+    "Do not attach Estonian case endings to runtime-inserted names or values; rephrase instead.",
+    "Keep English proper nouns that Estonian players know in English (Sim, The Sims 4) rather than inventing translations."
+  ]
+}
