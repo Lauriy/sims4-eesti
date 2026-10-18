@@ -2,10 +2,12 @@
 
 Builds an unofficial Estonian text mod for The Sims 4 from the English string
 files on the machine it runs on. Phase 1 (extract → set → validate → build →
-deploy) is implemented; see `README.md` for the user-facing how-to,
-`IMPLEMENTATION_NOTES.md` for the measured findings, and
-`Sims4_Eesti_Implementation_Brief.md` for the specification. **Phase 2+ is
-designed but must not be built yet.**
+deploy) is complete and verified in game. Beyond it, and directed by the owner
+rather than by the brief's original phase limit: an install-wide catalog, batch
+translation with reference languages and a self-checking glossary, and the
+sequencing of the bulk run in `RUN_PLAN.md`. See `README.md` for the user-facing
+how-to, `IMPLEMENTATION_NOTES.md` for the measured findings, and
+`Sims4_Eesti_Implementation_Brief.md` for the original specification.
 
 This file is part of the repository and loads in every contributor's session. If
 you want to layer your own instructions on top, use `CLAUDE.local.md` (gitignored)
@@ -15,14 +17,14 @@ or your user-level config — both load alongside this file.
 
 ```powershell
 npm ci                                  # no build step: tsx runs the TypeScript directly
-npm test                                # 89 tests, synthetic fixtures, no game files
+npm test                                # synthetic fixtures, no game files needed
 npx tsc --noEmit                        # strict typecheck; do this before claiming done
 
 # Opt-in integration tests against a real package (skipped, not passed, without it)
 $env:SIMS4_EESTI_SOURCE_PACKAGE="<path to Strings_ENG_US.package>"
 npm run test:game
 
-npm run cli -- <extract|search|set|build|deploy> --help
+npm run cli -- <extract|scan|merge|search|set|build|deploy|translate-export|translate-import|glossary-check|lint|rank> --help
 ```
 
 `npm run cli --` needs the `--` — everything after it is passed to the tool.
