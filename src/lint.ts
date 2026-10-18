@@ -83,6 +83,9 @@ export function findForeignForms(
       const match = pattern.exec(estonian);
       if (!match) continue;
       const form = match[0];
+      // A form that is also in the English is a name or a loanword carried over,
+      // not a Finnish copy: "Melissa" ends in -ssa and appears in both languages.
+      if (occurrence.sourceText.toLowerCase().includes(form.toLowerCase())) continue;
       findings.push({
         occurrenceId: occurrence.occurrenceId,
         english: occurrence.sourceText,
