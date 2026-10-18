@@ -14,6 +14,7 @@ import { exportBatches, importTranslations, translationStats } from "./translate
 import { mergeCatalogs } from "./merge.js";
 import { checkGlossary, loadGlossary, mergeTermReports } from "./glossary.js";
 import { occurrenceIdsOf, rankStrings } from "./rank.js";
+import { describeWave, inspectWave } from "./wave.js";
 import { findForeignForms } from "./lint.js";
 import { loadReferenceFiles } from "./references.js";
 import { deploy, DeployError, ARTIFACT_NAME } from "./deploy.js";
@@ -224,6 +225,15 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
         help: "Reference packages, comma-separated (e.g. work/reference-fi): a hit that also appears there is marked as copied",
       },
       limit: { help: "Show at most this many findings (default 40)" },
+      ...COMMON_CONFIG_FLAG,
+    },
+  },
+  wave: {
+    summary: "Report the state of a translation wave: answered, accepted, rejected, imported",
+    flags: {
+      catalog: { help: "Path to catalog.json" },
+      in: { help: "Directory of batch files (and their .translated.json answers)" },
+      translations: { help: "Translations file, to report what is already imported" },
       ...COMMON_CONFIG_FLAG,
     },
   },
@@ -688,6 +698,25 @@ These are reports, not verdicts: Estonian has borrowed from Finnish for centurie
   return EXIT_OK;
 }
 
+function runWave(parsed: ParsedArgs, config: Config): number {
+  const directory = parsed.values.get("in");
+  if (!directory) throw new UsageError('"wave" needs --in <directory of batch files>.');
+  const report = inspectWave({
+    directory: resolve(directory),
+    catalogPath: resolvePath(parsed, "catalog", config.catalogPath),
+    translations: loadTranslations(resolvePath(parsed, "translations", config.translationsPath)),
+  });
+  for (const line of describeWave(report)) console.log(line);
+  const rejected = report.batches.flatMap((batch) =>
+    batch.rejected.map((entry) => ({ batch: batch.batch, ...entry }))
+  );
+  for (const entry of rejected.slice(0, 10)) {
+    console.log(`  rejected ${entry.occurrenceId} (${entry.batch}): ${entry.codes.join(", ")}`);
+  }
+  if (rejected.length > 10) console.log(`  (${rejected.length - 10} more rejected entries not shown)`);
+  return EXIT_OK;
+}
+
 function runGlossaryCheck(parsed: ParsedArgs, config: Config): number {
   const catalogPath = resolvePath(parsed, "catalog", config.catalogPath);
   const translationsPath = resolvePath(parsed, "translations", config.translationsPath);
@@ -1131,6 +1160,8 @@ function main(argv: string[]): number {
       return runRank(parsed, config);
     case "lint":
       return runLint(parsed, config);
+    case "wave":
+      return runWave(parsed, config);
     case "glossary-check":
       return runGlossaryCheck(parsed, config);
     case "glossary-merge":
