@@ -32,18 +32,18 @@ import type { TranslationMap } from "./translations.js";
 const FOREIGN_ENDINGS: { pattern: RegExp; note: string }[] = [
   // -ailla / -äillä / -aile: the Finnish verb family the playtest caught.
   // "flirttailla" is Finnish; Estonian has "flirtima", imperative "flirta".
-  { pattern: /\p{L}{4,}ailla\b/giu, note: "Finnish verb form (-ailla); Estonian uses -ma/-da" },
-  { pattern: /\p{L}{4,}äillä\b/giu, note: "Finnish verb form (-äillä)" },
-  { pattern: /\p{L}{4,}aile\b/giu, note: "Finnish verb form (-aile); Estonian uses -ma/-da" },
-  { pattern: /\p{L}{4,}äile\b/giu, note: "Finnish verb form (-äile)" },
-  { pattern: /\p{L}{4,}ailu\b/giu, note: "Finnish verbal noun (-ailu); Estonian uses -mine" },
-  { pattern: /\p{L}{4,}inen\b/giu, note: "Finnish adjective (-inen); Estonian uses -ne or -line" },
-  { pattern: /\p{L}{4,}ssa\b/giu, note: "Finnish inessive (-ssa); Estonian uses -s" },
-  { pattern: /\p{L}{4,}ssä\b/giu, note: "Finnish inessive (-ssä); Estonian uses -s" },
-  { pattern: /\p{L}{4,}minen\b/giu, note: "Finnish verbal noun (-minen); Estonian uses -mine" },
-  { pattern: /\p{L}{4,}matta\b/giu, note: "Finnish abessive (-matta); Estonian uses -mata" },
-  { pattern: /\p{L}{4,}ttava\b/giu, note: "Finnish participle (-ttava); Estonian uses -tav" },
-  { pattern: /\p{L}{4,}ttävä\b/giu, note: "Finnish participle (-ttävä); Estonian uses -tav" },
+  { pattern: /\p{L}{4,}ailla(?![\p{L}\p{N}_])/giu, note: "Finnish verb form (-ailla); Estonian uses -ma/-da" },
+  { pattern: /\p{L}{4,}äillä(?![\p{L}\p{N}_])/giu, note: "Finnish verb form (-äillä)" },
+  { pattern: /\p{L}{4,}aile(?![\p{L}\p{N}_])/giu, note: "Finnish verb form (-aile); Estonian uses -ma/-da" },
+  { pattern: /\p{L}{4,}äile(?![\p{L}\p{N}_])/giu, note: "Finnish verb form (-äile)" },
+  { pattern: /\p{L}{4,}ailu(?![\p{L}\p{N}_])/giu, note: "Finnish verbal noun (-ailu); Estonian uses -mine" },
+  { pattern: /\p{L}{4,}inen(?![\p{L}\p{N}_])/giu, note: "Finnish adjective (-inen); Estonian uses -ne or -line" },
+  { pattern: /\p{L}{4,}ssa(?![\p{L}\p{N}_])/giu, note: "Finnish inessive (-ssa); Estonian uses -s" },
+  { pattern: /\p{L}{4,}ssä(?![\p{L}\p{N}_])/giu, note: "Finnish inessive (-ssä); Estonian uses -s" },
+  { pattern: /\p{L}{4,}minen(?![\p{L}\p{N}_])/giu, note: "Finnish verbal noun (-minen); Estonian uses -mine" },
+  { pattern: /\p{L}{4,}matta(?![\p{L}\p{N}_])/giu, note: "Finnish abessive (-matta); Estonian uses -mata" },
+  { pattern: /\p{L}{4,}ttava(?![\p{L}\p{N}_])/giu, note: "Finnish participle (-ttava); Estonian uses -tav" },
+  { pattern: /\p{L}{4,}ttävä(?![\p{L}\p{N}_])/giu, note: "Finnish participle (-ttävä); Estonian uses -tav" },
 ];
 
 export interface ForeignForm {

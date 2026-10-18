@@ -6,7 +6,13 @@
     {
       "en": "New Game",
       "et": "Uus mäng",
-      "note": "main menu"
+      "note": "main menu",
+      "accept": [
+        "Uus mäng",
+        "uue mängu",
+        "uut mängu",
+        "uue mänguga"
+      ]
     },
     {
       "en": "Load Game",
@@ -79,11 +85,24 @@
     },
     {
       "en": "Volume",
-      "et": "Helitugevus"
+      "et": "Helitugevus",
+      "accept": [
+        "Helitugevus",
+        "heli",
+        "helitugevust",
+        "helitugevuse"
+      ]
     },
     {
       "en": "Manage Worlds",
-      "et": "Halda maailmu"
+      "et": "Halda maailmu",
+      "accept": [
+        "Halda maailmu",
+        "maailmade haldamisse",
+        "maailmade haldamist",
+        "maailmade haldamine",
+        "maailmade haldamise"
+      ]
     },
     {
       "en": "Create a Sim",
@@ -104,7 +123,13 @@
     },
     {
       "en": "Live Mode",
-      "et": "Elurežiim"
+      "et": "Elurežiim",
+      "accept": [
+        "Elurežiim",
+        "elurežiimi",
+        "elurežiimis",
+        "elurežiimile"
+      ]
     },
     {
       "en": "Households",
