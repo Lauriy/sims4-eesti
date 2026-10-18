@@ -198,7 +198,8 @@
         "taset"
       ],
       "ambiguous": true,
-      "exclude": "level height"
+      "exclude": "level up|level height",
+      "note": "\"level up\" is rendered as the verb tõsta (+ the skill's name), e.g. Tõsta viiulioskust, which is why level-up strings do not contain the noun tase"
     },
     {
       "en": "trait",
