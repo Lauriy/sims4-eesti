@@ -11,7 +11,14 @@
     {
       "en": "Load Game",
       "et": "Laadi mäng",
-      "note": "main menu and in-game menu"
+      "note": "main menu and in-game menu",
+      "accept": [
+        "Laadi mäng",
+        "laadimine",
+        "laadimise",
+        "laadimiseks",
+        "laadida"
+      ]
     },
     {
       "en": "Save Game",
@@ -25,7 +32,8 @@
     {
       "en": "Continue",
       "et": "Jätka",
-      "ambiguous": true
+      "ambiguous": true,
+      "exclude": "will continue|to continue|continue to|continues|continue growing"
     },
     {
       "en": "Options",
@@ -41,7 +49,8 @@
       "et": "Seaded",
       "accept": [
         "Seadete"
-      ]
+      ],
+      "caseSensitive": true
     },
     {
       "en": "Graphics",
@@ -65,7 +74,8 @@
     },
     {
       "en": "Music",
-      "et": "Muusika"
+      "et": "Muusika",
+      "ambiguous": true
     },
     {
       "en": "Volume",
@@ -79,7 +89,14 @@
       "en": "Create a Sim",
       "et": "Loo sim",
       "caseSensitive": true,
-      "note": "the screen and its button; the game also writes 'Create A Sim' inside prose, where Estonian inflects it (Simi loomisel) - only the exact button form is checked"
+      "note": "the screen and its button; the game also writes 'Create A Sim' inside prose, where Estonian inflects it (Simi loomisel) - only the exact button form is checked",
+      "accept": [
+        "Loo sim",
+        "simi loomine",
+        "simi loomise",
+        "simi loomisel",
+        "simi loomist"
+      ]
     },
     {
       "en": "Build Mode",
@@ -101,7 +118,8 @@
         "leibkonnad",
         "leibkonnal",
         "leibkonda"
-      ]
+      ],
+      "exclude": "household (items|objects|goods)"
     },
     {
       "en": "Exit Game",
@@ -114,7 +132,13 @@
     {
       "en": "Library",
       "et": "Kogu",
-      "note": "the Gallery's saved-items tab; a public library building is 'raamatukogu'"
+      "note": "the Gallery's saved-items tab; a public library building is 'raamatukogu'",
+      "accept": [
+        "raamatukogu",
+        "raamatukogus",
+        "raamatukokku",
+        "raamatukogu"
+      ]
     },
     {
       "en": "Play Scenario",
@@ -173,7 +197,8 @@
         "tasemele",
         "taset"
       ],
-      "ambiguous": true
+      "ambiguous": true,
+      "exclude": "level height"
     },
     {
       "en": "trait",
@@ -250,8 +275,11 @@
       "en": "friendship",
       "et": "sõprus",
       "accept": [
-        "sõpruse",
-        "sõprust"
+        "sõbrad",
+        "sõbra",
+        "sõber",
+        "sõprade",
+        "sõbrunema"
       ],
       "ambiguous": true
     },
@@ -270,7 +298,8 @@
         "väikelapse",
         "väikelapsed",
         "väikelapsi"
-      ]
+      ],
+      "exclude": "Toddler Stuff"
     },
     {
       "en": "teen",
