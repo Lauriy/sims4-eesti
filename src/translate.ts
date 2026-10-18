@@ -14,8 +14,17 @@
  * that is merely imperfect Estonian is not - that is what review during play is
  * for.
  */
-import { existsSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { basename, dirname, join } from "node:path";
 import {
   TOOL_NAME,
   TOOL_VERSION,
@@ -185,6 +194,24 @@ function classify(sourceText: string): { kind: string; notes: string[] } {
     return { kind: "sentence or paragraph: notification, tooltip or description", notes };
   }
   return { kind: "phrase", notes };
+}
+
+/** Writes a batch file: header compact, one entry per line. */
+function writeBatchFile(path: string, batch: BatchFile): void {
+  const { entries, ...header } = batch;
+  const head = Object.entries(header)
+    .map(([key, value]) => `${JSON.stringify(key)}:${JSON.stringify(value)}`)
+    .join(",");
+  const body = entries.map((entry) => JSON.stringify(entry)).join(",\n");
+  mkdirSync(dirname(path), { recursive: true });
+  const tempPath = `${path}.tmp-${process.pid}`;
+  try {
+    writeFileSync(tempPath, `{${head},"entries":[\n${body}\n]}\n`, "utf8");
+    renameSync(tempPath, path);
+  } catch (error) {
+    rmSync(tempPath, { force: true });
+    throw error;
+  }
 }
 
 /**
@@ -385,7 +412,18 @@ export function exportBatches(options: ExportOptions): ExportResult {
       entries: slice.map((occurrence) => {
         const where = classify(occurrence.sourceText);
         const analysis = analyzeSyntax(occurrence.sourceText);
-        const { before, after } = neighbours(byTable, occurrence.resourceTgi, occurrence.entryIndex);
+        // The batch is a contiguous block of the table, so an entry's neighbours
+        // are usually the entries beside it in this same file. Sending them again
+        // as text doubles the batch's bytes to say what the reader already sees;
+        // only the neighbours that are NOT in the block are worth carrying.
+        const inBatch = new Set(slice.map((item) => item.sourceText));
+        const { before: allBefore, after: allAfter } = neighbours(
+          byTable,
+          occurrence.resourceTgi,
+          occurrence.entryIndex
+        );
+        const before = allBefore?.filter((text) => !inBatch.has(text));
+        const after = allAfter?.filter((text) => !inBatch.has(text));
 
         // Context is spent where ambiguity lives. A one-word label such as "Sound"
         // or "Home" needs the neighbours and the references to be translated at all;
@@ -448,7 +486,7 @@ export function exportBatches(options: ExportOptions): ExportResult {
       }),
     };
     const path = join(options.outDir, `batch-${String(index).padStart(3, "0")}.json`);
-    writeJsonAtomic(path, batch);
+    writeBatchFile(path, batch);
     batchPaths.push(path);
   }
 
