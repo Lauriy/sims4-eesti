@@ -89,7 +89,9 @@ the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption
   or **dropped whole**, on any axis. Dropping is what EA's Finnish does: it deletes
   gender pairs (`{M1.his}{F1.her} dreams?` → `…unelmansa?`) and drops one of two
   number groups in the same string. Half a group is refused — the missing variant
-  would render with no text — as is reordering.
+  would render with no text. The order *inside* a group does not matter:
+  `{M0.his}{F0.her}` and `{F0.her}{M0.his}` render the same two texts for the same
+  two genders, so either order is accepted.
 - **Branch content that is a value name is a reference, not text:**
   `{P0.ObjectName}`, `{S2.{S3.ObjectName}}` stay exactly as written (Finnish keeps
   them too). Everything else in a branch is literal text (`{S0.Pack}` →

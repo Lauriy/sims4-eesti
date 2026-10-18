@@ -388,8 +388,12 @@ const describeGroup = (group: BranchGroup) => group.selectors.map((selector) => 
 export function branchProblem(source: VariantBranch[], translation: VariantBranch[]): string | undefined {
   const expected = groupBranches(source);
   const found = groupBranches(translation);
+  // Order inside a group is not meaningful: {M0.his}{F0.her} and {F0.her}{M0.his}
+  // render the same two texts for the same two genders, and a translator may write
+  // the pair in either order. The group's membership is what must survive.
   const sameGroup = (a: BranchGroup, b: BranchGroup) =>
-    a.selectors.length === b.selectors.length && a.selectors.every((selector, i) => selector === b.selectors[i]);
+    a.selectors.length === b.selectors.length &&
+    [...a.selectors].sort().every((selector, i) => selector === [...b.selectors].sort()[i]);
 
   let i = 0;
   let j = 0;

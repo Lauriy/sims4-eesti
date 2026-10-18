@@ -132,7 +132,7 @@ const STYLE_NOTES = [
   "Return ONLY a JSON object mapping each occurrenceId to the Estonian text: {\"<id>\": \"<text>\", ...}",
   "Do not translate the ids. Do not add or drop entries. Do not explain.",
   "Keep every placeholder exactly as it appears, including its number and spelling: {0.SimFirstName}, {1.String}, {0.Number}, {0.Money}, {0.SimName}, {0.ObjectName}, {0.TimeShort}, {0.Timespan}, {0.DayOfWeekShort}, {0.DayOfWeekLong}, {0.DateShort}, {0.SimFirstNameList} and the other runtime values you will see. Reordering them inside a sentence is fine; changing or dropping one is not.",
-  "Line breaks appear in two forms and you must give back the form the English uses, as many times as it uses it. Usually the English holds the two characters backslash and n (written \\\\n in the JSON), which the game renders as a line break - write those two characters back, the same number of them. Sometimes it holds a genuine line break (written \\n in the JSON) - write a genuine line break there. The count of each form is checked. Several object names end with one.",
+  "Line breaks appear in two forms and you must give back the form the English uses, as many times as it uses it. Usually the English holds the two characters backslash and n (written \\\\n in the JSON), which the game renders as a line break - write those two characters back, the same number of them. Sometimes it holds a genuine line break (written \\n in the JSON) - write a genuine line break there. The count of each form is checked. Worked example: if the English is \"Line one\\\\nLine two\" (backslash, n), your answer must be \"Rida üks\\\\nRida kaks\" - the same two characters, not a line break. If the English contains a real break, your answer contains a real break.",
   "Preserve leading and trailing spaces exactly as in the English.",
   "Do not translate: Sim, Sims, The Sims 4, EA, Maxis, and pack or kit names (e.g. Backyard Stuff).",
   "Uppercase English labels are usually buttons or tabs: translate them as short noun phrases or imperatives in normal Estonian capitalisation, not in capitals.",
@@ -503,7 +503,7 @@ keys, and your translation will be applied to all of them, so translate it once.
 If one of those keys needs a different wording - the same English word can be a
 radio station and a build category - put it in a file named
 \`batch-NNN.overrides.json\` next to your answer, as \`{"<occurrence id>": "<text>"}\`.
-It is applied after the shared text and wins.
+It is applied after the shared text and wins. Do not list the alsoAt keys in your answer yourself: the import fills them from the entry you translated.
 
 Rules that the import step enforces (a violating entry is rejected, not repaired):
 
