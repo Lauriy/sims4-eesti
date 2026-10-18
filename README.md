@@ -274,7 +274,7 @@ The 57 base-game entries, grouped by where you will see them:
 | Build/buy tag | `Heli` | category filter |
 
 Every group was chosen by inspecting the strings that sit next to each label in
-the table (Maxis groups UI text in blocks) — see `IMPLEMENTATION_NOTES.md` for why
+the table (Maxis groups UI text in blocks) — see `docs/IMPLEMENTATION_NOTES.md` for why
 that is the only offline evidence available, and for the one label that was
 chosen wrongly before the first trial. Two labels are deliberately **not**
 translated: `Marketplace` and one of the two `Home` entries, both of which share
@@ -330,7 +330,7 @@ and style rules they follow, and the `note` on each entry in
 
 ## Status
 
-Verified on this machine, with evidence in `IMPLEMENTATION_NOTES.md`:
+Verified on this machine, with evidence in `docs/IMPLEMENTATION_NOTES.md`:
 
 - 95 automated tests pass (`npm test`). The 4 integration tests against the real
   `Strings_ENG_US.package` also pass, but only when pointed at it — without
@@ -454,10 +454,41 @@ dist/              ignored: built packages
 Phase 1 (one package, one table, safe build, in-game proof) is complete. Phase 2's
 installation-wide catalog, source diffing and bulk translation pipeline are built;
 what remains of it is the review loop and the community side. See
-`Sims4_Eesti_Implementation_Brief.md`, `PHASE2_DESIGN.md` and
-`IMPLEMENTATION_NOTES.md`. What the project learned the hard way is in
+`docs/Sims4_Eesti_Implementation_Brief.md`, `docs/PHASE2_DESIGN.md` and
+`docs/IMPLEMENTATION_NOTES.md`. What the project learned the hard way is in
 `LESSONS.md`, and how the remaining
 work is sequenced is in `RUN_PLAN.md`.
+
+---
+
+## Translating into your own language
+
+This repository was built for Estonian, but the pipeline is not: it reads the
+English string tables, gives a translator per-string context, and validates what
+comes back. A fork for another language changes four things:
+
+1. **The target locale and language name** — passed to the batch exporter, and
+   nothing else needs to know:
+   ```powershell
+   npm run cli -- translate-export --catalog work/beta-catalog.json `
+     --translations translations/fi-FI.json --packages BASE --dedupe-texts `
+     --target-locale fi-FI --language-name Finnish --out work/batches-fi
+   ```
+   `translations/et-EE.json` becomes your `<locale>.json`, set in `config.json`.
+2. **The style notes** in `src/translate.ts` (`STYLE_NOTES`). They contain facts
+   about Estonian — no grammatical gender, case endings, the Finnish reference —
+   that a translator for another language must rewrite. The first line is filled
+   in from `--language-name`; the rest is prose you should edit.
+3. **The glossary** (`glossary.json`) — write your own terms. The `en`/`et` field
+   names are historical: `et` is simply "the target language".
+4. **The lint** (`src/lint.ts`) looks for Finnish morphology leaking into
+   Estonian. Point it at your own reference language, or disable it; it is a
+   triage aid, not a correctness check.
+
+The rest — extraction, the catalogs, batch export and import, validation, the
+build's two-reader verification, deployment, the glossary and drift checks — is
+language-agnostic. `LESSONS.md` is worth reading before you design anything here;
+most of its items cost a day each to learn once.
 
 ---
 
@@ -481,9 +512,9 @@ agent could read EA's own translation of all 58,374 strings, and supplying the
 paths and credentials. The commits carry his git identity because they were made
 from his machine; the text inside them was not written by him.
 
-Two files predate or sit outside that authorship: `Sims4_Eesti_Implementation_Brief.md`
-is Codex's, and `agents/shared/lauri/` holds Lauri's own machine-wide rules,
-copied in so every contributor's tooling loads them.
+Two things sit outside that authorship: `docs/Sims4_Eesti_Implementation_Brief.md`
+is Codex's, and the conventions the work was held to came from Lauri's own
+machine-wide rules, which live outside this repository.
 
 Nothing in this repository has been reviewed by a human translator. The
 `reviewed` state exists for that review to be recorded in — today every entry is

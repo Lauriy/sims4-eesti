@@ -188,6 +188,8 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
         boolean: true,
         help: "One entry per distinct English text; the other keys are filled in from it at import",
       },
+      "target-locale": { help: "Locale recorded in the batches (default et-EE); a fork for another language sets its own" },
+      "language-name": { help: "Target language as the translator should read it (default Estonian)" },
       ids: { help: "Only the occurrence ids in this JSON file (a rank selection, or a plain array)" },
       limit: { help: "Stop after this many strings in total" },
       references: {
@@ -562,6 +564,8 @@ function runTranslateExport(parsed: ParsedArgs, config: Config): number {
     ...(parsed.values.get("limit") ? { limit: Number(parsed.values.get("limit")) } : {}),
     ...(ids ? { ids } : {}),
     ...(parsed.booleans.has("dedupe-texts") ? { dedupeTexts: true } : {}),
+    ...(parsed.values.get("target-locale") ? { targetLocale: parsed.values.get("target-locale")! } : {}),
+    ...(parsed.values.get("language-name") ? { languageName: parsed.values.get("language-name")! } : {}),
     ...(parsed.values.get("references")
       ? { referenceDirs: parsed.values.get("references")!.split(",").map((item) => resolve(item.trim())) }
       : {}),

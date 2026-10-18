@@ -105,6 +105,10 @@ export interface ExportOptions {
   ids?: string[];
   /** One entry per distinct text; the other keys travel in `alsoAt`. */
   dedupeTexts?: boolean;
+  /** Target locale recorded in the batches (default et-EE; another fork sets its own). */
+  targetLocale?: string;
+  /** The target language's name, as the translator should read it (default Estonian). */
+  languageName?: string;
   /** Directories or files holding reference translations (e.g. work/reference-fi). */
   referenceDirs?: string[];
   /** How many reference languages to show per entry (default 3). */
@@ -394,6 +398,16 @@ export function exportBatches(options: ExportOptions): ExportResult {
   const createdAt = new Date().toISOString();
   const batchPaths: string[] = [];
   const glossary = loadGlossary(options.glossaryPath ?? "glossary.json");
+  // The first note names the target language; the rest of STYLE_NOTES is written
+  // for Estonian specifically. A fork translating into another language keeps the
+  // pipeline and rewrites the notes, the glossary and the lint patterns - see
+  // README, "Translating into your own language".
+  const languageName = options.languageName ?? "Estonian";
+  const targetLocale = options.targetLocale ?? "et-EE";
+  const notes = [
+    `Translate the English game text into ${languageName} (${targetLocale}).`,
+    ...STYLE_NOTES.slice(1),
+  ];
 
   for (let offset = 0; offset < toExport.length; offset += batchSize) {
     const slice = toExport.slice(offset, offset + batchSize);
@@ -402,10 +416,10 @@ export function exportBatches(options: ExportOptions): ExportResult {
     const batch: BatchFile = {
       schemaVersion: BATCH_SCHEMA_VERSION,
       createdAt,
-      targetLocale: "et-EE",
+      targetLocale,
       glossary: glossaryForPrompt(glossary),
       notes: [
-        ...STYLE_NOTES,
+        ...notes,
         "The glossary field in this file is the agreed vocabulary for this project. Use those renderings; if one is wrong for your string, translate it your way and say so in the terms file.",
         "The context block describes each string: what it reads as, the strings around it in the game's own file, and reference translations in other languages. The references are hints, not authority - Estonian is not Finnish, and a professional translation of the same string can still be the wrong shape for Estonian.",
       ],
@@ -492,7 +506,7 @@ export function exportBatches(options: ExportOptions): ExportResult {
 
   const instructions = `# Translation batches
 
-${batchPaths.length} batch file(s), ${toExport.length} entries${options.dedupeTexts ? ` covering ${translatable.length} keys of the game` : ""}, target locale et-EE.
+${batchPaths.length} batch file(s), ${toExport.length} entries${options.dedupeTexts ? ` covering ${translatable.length} keys of the game` : ""}, target locale ${targetLocale}.
 
 For each batch file, produce a file next to it named \`batch-NNN.translated.json\`
 containing a single JSON object that maps every \`occurrenceId\` in the batch to its
@@ -507,7 +521,7 @@ It is applied after the shared text and wins. Do not list the alsoAt keys in you
 
 Rules that the import step enforces (a violating entry is rejected, not repaired):
 
-${STYLE_NOTES.map((note) => `- ${note}`).join("\n")}
+${notes.map((note) => `- ${note}`).join("\n")}
 
 Import with:
 

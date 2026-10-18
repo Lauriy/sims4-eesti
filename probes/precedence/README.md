@@ -3,7 +3,7 @@
 Two experiments that Phase 2 depends on, neither of which can be answered from
 the files: **which package wins when two claim the same resource**, and **whether
 a package may override part of a table while the game keeps its own text for the
-rest**. Design context: `../../PHASE2_DESIGN.md`.
+rest**. Design context: `../../docs/PHASE2_DESIGN.md`.
 
 Both are cheap to run and completely reversible — they are two throwaway packages
 in the Mods folder, deleted afterwards. Run them whenever you next start the game.
@@ -89,5 +89,5 @@ mod's text is what appears (observed 2026-10-16, 1.128.90.1030).
   nothing.
 - **Result 3** decides whether a future build can emit only translated entries
   (a few kilobytes instead of 1.7 MiB) or must keep shipping the complete table.
-  If fall-through works, the staleness problem in `PHASE2_DESIGN.md` shrinks with
+  If fall-through works, the staleness problem in `docs/PHASE2_DESIGN.md` shrinks with
   it: a sparse override cannot go stale in the 58,322 entries it never mentions.

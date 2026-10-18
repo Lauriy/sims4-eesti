@@ -6,8 +6,8 @@ deploy) is complete and verified in game. Beyond it, and directed by the owner
 rather than by the brief's original phase limit: an install-wide catalog, batch
 translation with reference languages and a self-checking glossary, and the
 sequencing of the bulk run in `RUN_PLAN.md`. See `README.md` for the user-facing
-how-to, `IMPLEMENTATION_NOTES.md` for the measured findings, and
-`Sims4_Eesti_Implementation_Brief.md` for the original specification.
+how-to, `docs/IMPLEMENTATION_NOTES.md` for the measured findings, and
+`docs/Sims4_Eesti_Implementation_Brief.md` for the original specification.
 
 This file is part of the repository and loads in every contributor's session. If
 you want to layer your own instructions on top, use `CLAUDE.local.md` (gitignored)
@@ -76,7 +76,7 @@ Paths contain spaces: quote them.
 ## Translation policy (conservative by design)
 
 `src/validation.ts` decides what may be applied. The rules come from a survey of
-the real 58,374-entry table (see `IMPLEMENTATION_NOTES.md`), not from assumption:
+the real 58,374-entry table (see `docs/IMPLEMENTATION_NOTES.md`), not from assumption:
 
 - Runtime values are preserved as a **multiset** — reordering is allowed, losing
   or adding a repetition is not. The name list is closed and measured (44 names
