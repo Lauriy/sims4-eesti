@@ -8,7 +8,7 @@ you point it at one English `.package`, pick strings, write Estonian text, and i
 writes one `.package` you can drop into your Mods folder.
 
 **Scope of this prototype:** an install-wide catalog (75,340 English strings: the
-base game's 58,374, three stuff packs, and every mod in the Mods folder) and **672
+base game's 58,374, three stuff packs, and every mod in the Mods folder) and **7,927
 translated entries across four string tables** — the base game's menus, options
 dialogs and mode switcher, plus the complete string tables of Romantic Garden
 Stuff (SP06), Backyard Stuff (SP08) and My First Pet Stuff (SP14). Every other
@@ -239,12 +239,12 @@ later; or the game updated and the package needs a rebuild.
 
 ## What is translated today
 
-672 entries across four string tables. `translations/et-EE.json` holds the text
+7,927 entries across four string tables. `translations/et-EE.json` holds the text
 and `translations/metadata.json` the state and source hash of each entry.
 
 | Table in the built package | Entries | Translated | What it covers |
 | --- | --- | --- | --- |
-| Base game | 58,374 | 57 | the menus, options dialogs and mode switcher listed below |
+| Base game | 58,374 | 7,312 | wave 1's first tranche, on top of the menus, options and mode switcher listed below |
 | Romantic Garden Stuff (SP06) | 262 | 219 | the pack's item names, tooltips and moodlet text |
 | My First Pet Stuff (SP14) | 225 | 203 | same, for that pack |
 | Backyard Stuff (SP08) | 201 | 193 | same, for that pack |
@@ -252,9 +252,11 @@ and `translations/metadata.json` the state and source hash of each entry.
 The three packs' tables are translated in full apart from 73 entries the tool
 deliberately leaves in English: gender/plural branches such as
 `{M0.he'd}{F0.she'd}`, HTML-like markup, and empty strings (see
-[Limitations](#limitations-you-should-know-about)).
-The base game is translated **only** where listed below — the other 58,317 of its
-entries keep their English text.
+[Limitations](#limitations-you-should-know-about)). The base game is 12.5%
+translated: the most-seen slice, the syntax slice, and the first ~4,000 strings of
+wave 1 in table order.
+The base game is translated **only** where listed below — 7,312 of its 58,374
+entries are translated, the other 51,062 keep their English text.
 
 The 57 base-game entries, grouped by where you will see them:
 
@@ -279,7 +281,7 @@ translated: `Marketplace` and one of the two `Home` entries, both of which share
 their text with a build/buy list, where a single translation would change a
 category name too.
 
-**All 672 of these entries are machine-drafted and unreviewed.** `npm run cli --
+**All 7,927 of these entries are machine-drafted and unreviewed.** `npm run cli --
 build` without `--include-unreviewed` will refuse to apply them, and the manifest
 reports `reviewedApplied: 0` — no human has reviewed these translations, and none
 of them was produced by a human translator. See `glossary.json` for the vocabulary
@@ -338,7 +340,7 @@ Verified on this machine, with evidence in `IMPLEMENTATION_NOTES.md`:
   npm run test:game
   ```
 - The built package was reopened and compared entry by entry against the source:
-  59,062 / 59,062 entries across four tables, exactly 672 changed, 0 unexpected
+  59,062 / 59,062 entries across four tables, exactly 7,927 changed, 0 unexpected
   differences, identical resource identity, all 64-bit instance IDs preserved.
 - Output is byte-identical across separate builds: the package rebuilt hours later,
   after code changes, has the same sha256 as the deployed one.
@@ -365,7 +367,7 @@ Not verified:
 - No systematic clipping check on the longer labels, and the individual labels of
   the main checklist were not each confirmed by eye — the tester's confirmation was
   general, plus the Audio tab probe specifically.
-- **No human has reviewed the 672 translations.** All are machine-drafted and the
+- **No human has reviewed the 7,927 translations.** All are machine-drafted and the
   manifest reports `reviewedApplied: 0`.
 - **The branch rules rest on shipped evidence, not on this machine.** That
   Estonian may drop a whole gender pair (`{M0.his}{F0.her}`), keep both branches
@@ -373,16 +375,16 @@ Not verified:
   inferred from EA's own Finnish translation. None of those three has yet been
   watched rendering in this game; they belong in the next in-game session, next
   to the fall-through probe.
-- The 672 entries were translated before the glossary and the Finnish reference
-  material existed, so their terminology has been checked (`glossary-check`) but
-  not regenerated against those inputs.
+- The first 672 entries were translated before the glossary and the Finnish
+  reference material existed, so their terminology has been checked
+  (`glossary-check`) but not regenerated against those inputs.
 
 ## Legal and distribution
 
 - This tool reads the game files on your own PC and writes a mod. It does not
   distribute game content, and this repository contains no game data.
 - The generated package contains the **English text of the four overridden
-  tables** (58,390 entries that keep their English text, plus the 672 translated
+  tables** (51,135 entries that keep their English text, plus the 7,927 translated
   ones), because that is how the English fallback works. **Keep the built package
   private** until you have checked what you are allowed to redistribute.
 - EA's mod policy requires noncommercial distribution and prohibits suggesting
