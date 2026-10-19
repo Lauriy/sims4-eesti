@@ -62,7 +62,7 @@ There is no build step: `npm run cli` runs the TypeScript directly through tsx.
 
 ```powershell
 npm ci
-npm test          # 108 tests, all synthetic; no game files needed
+npm test          # 109 tests, all synthetic; no game files needed
 ```
 
 ## Use
@@ -170,6 +170,7 @@ ambiguities learned by triaging what the checker reports.
 | `--force-replace-unknown` (deploy) | Replace a same-named file the tool does not recognise as its own — after backing it up. |
 | `--game-version` (build) | Record the game version in the manifest. Without it the manifest says "not recorded" rather than inventing one. |
 | `--locales` (build) | Base-game languages to carry the translated table for, e.g. `--locales en,fi` or `all`. Each language gets an identical copy with that locale byte, so the mod applies whichever language the game runs in. Default: only the source language (English). |
+| `--sparse` (build) | Emit only translated entries, with no English fallback. The game must fall through for omitted keys, which is not verified yet; use the sparse probe before distributing such a build. |
 
 Copy `config.example.json` to `config.json` to set default paths; command-line
 flags always win.
@@ -381,7 +382,7 @@ and style rules they follow, and the `note` on each entry in
 
 Verified on this machine, with evidence in `docs/IMPLEMENTATION_NOTES.md`:
 
-- 108 automated tests pass (`npm test`). The 4 integration tests against the real
+- 109 automated tests pass (`npm test`). The 4 integration tests against the real
   `Strings_ENG_US.package` also pass, but only when pointed at it — without
   `SIMS4_EESTI_SOURCE_PACKAGE` they are skipped, and a skipped test is not a pass:
   ```powershell
@@ -447,12 +448,17 @@ Not verified:
 
 - This tool reads the game files on your own PC and writes a mod. It does not
   distribute game content, and this repository contains no game data.
-- The generated package contains the **English text of the 105 overridden
-  tables** (2,915 entries that keep their English text, plus the 71,806 translated
-  ones), because that is how the English fallback works. That includes the English
-  strings of the installed mods, which are third-party content. **Keep the built
-  package private** until you have checked what you are allowed to redistribute;
-  do not publish it as a release asset.
+- The **full build** (105 tables) contains the English text of every overridden
+  mod table (2,915 fallback entries plus the 71,806 translated ones). That
+  includes third-party mod content, so the full package stays private; do not
+  publish it as a release asset.
+- The **game-and-packs build** (4 tables, 56,496 translations) is the package
+  attached to the beta release. It contains 2,575 English fallback entries from
+  EA's own game tables, because whole-table override is the only strategy verified
+  so far. It is published as a noncommercial mod under EA's mod policy; the
+  project is not affiliated with or endorsed by EA or Maxis.
+- `--sparse` can remove that fallback, but only once the game is shown to fall
+  through for omitted keys. Until then, a sparse package is experimental.
 - EA's mod policy requires noncommercial distribution and prohibits suggesting
   EA or Maxis endorsement. It does not pre-approve this project. Review it before
   publishing anything: <https://help.ea.com/en/articles/the-sims/the-sims-4/mods-policy/>

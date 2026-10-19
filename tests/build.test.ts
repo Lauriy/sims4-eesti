@@ -185,6 +185,21 @@ describe("whole-table override build", () => {
     assert.equal(manifest.locale.overridden, "00,06");
   });
 
+  it("can emit only translated entries for a fall-through build", () => {
+    writeTranslations([
+      { id: occurrenceIdOf("New Game"), text: "Uus mäng", state: "reviewed" },
+    ]);
+
+    const report = buildTo("sparse.package", { sparse: true });
+    assert.equal(report.counts.applied, 1);
+    const read = readStblTables(report.outPath);
+    assert.equal(read.tables.length, 1);
+    assert.equal(read.tables[0]!.entries.length, 1, "untranslated entries are omitted");
+    assert.equal(read.tables[0]!.entries[0]!.text, "Uus mäng");
+    assert.equal(report.resources[0]!.omittedEntries, 5);
+    assert.equal(report.resources[0]!.leftInEnglish, 0);
+  });
+
   it("records the source fingerprint, counts and output hash in the manifest", () => {
     const report = buildTo("manifest-check.package");
     const manifest = JSON.parse(readFileSync(report.manifestPath, "utf8")) as {

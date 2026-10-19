@@ -584,6 +584,13 @@ in a Basemental string.
 at load time. The first-named-wins rule was measured on game resources; the mod
 path is the next manual check.
 
+`build --sparse` now emits only translated entries, with no English fallback. It
+is tested at the package level (the omitted entries are genuinely absent), but it
+is only usable if the game falls through to its own table for omitted keys — the
+unrun step 3 of `probes/precedence/`. The public beta asset therefore uses whole
+tables and is game-plus-packs only; the full mod build stays private because it
+embeds the mods' English text.
+
 ## Known limitations and open questions
 
 1. **The base-game override was run in game on 2026-10-16** (README Status); the

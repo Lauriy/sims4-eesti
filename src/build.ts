@@ -80,6 +80,12 @@ export interface BuildOptions {
    * to the source table's own locale (English).
    */
   targetLocales?: string[];
+  /**
+   * Emit only entries that have a translation. The omitted keys must fall
+   * through to the original table in game - unverified, and the point of the
+   * sparse probe. A sparse package contains no EA or mod English fallback text.
+   */
+  sparse?: boolean;
 }
 
 export interface ExcludedEntry {
@@ -96,6 +102,8 @@ export interface EmittedResource {
   entryCount: number;
   replaced: number;
   leftInEnglish: number;
+  /** Source entries not emitted at all (sparse builds only). */
+  omittedEntries: number;
   reviewedReplaced: number;
   unreviewedReplaced: number;
 }
@@ -484,7 +492,10 @@ export function buildPackage(options: BuildOptions): BuildReport {
       return { key: entry.key, text: replacement.text };
     });
 
-    uniqueEntryCount += entries.length;
+    const emittedEntries = options.sparse
+      ? entries.filter((_, index) => replacementByIndex.has(index))
+      : entries;
+    uniqueEntryCount += emittedEntries.length;
     // One copy per requested base-game locale. The entries are identical; only
     // the locale byte in the instance differs, which is what makes the game load
     // the copy that matches the language it is running in.
@@ -492,14 +503,15 @@ export function buildPackage(options: BuildOptions): BuildReport {
     for (const localeByte of localeBytes) {
       const instance = withLocaleByte(table.instance, localeByte);
       const variantTgi = formatTgi(toTgi({ type: table.type, group: table.group, instance }));
-      writtenTables.push({ type: table.type, group: table.group, instance, entries });
-      expectedTables.set(variantTgi, entries);
+      writtenTables.push({ type: table.type, group: table.group, instance, entries: emittedEntries });
+      expectedTables.set(variantTgi, emittedEntries);
       resourceReports.push({
         tgi: variantTgi,
         localeByte: hex8(localeByte).slice(-2),
-        entryCount: entries.length,
+        entryCount: emittedEntries.length,
         replaced,
-        leftInEnglish: entries.length - replaced,
+        leftInEnglish: options.sparse ? 0 : emittedEntries.length - replaced,
+        omittedEntries: entries.length - emittedEntries.length,
         reviewedReplaced,
         unreviewedReplaced,
       });
@@ -813,6 +825,7 @@ function buildManifest(input: ManifestInput): Record<string, unknown> {
       entryCount: resource.entryCount,
       replaced: resource.replaced,
       leftInEnglish: resource.leftInEnglish,
+      omittedEntries: resource.omittedEntries,
       reviewedReplaced: resource.reviewedReplaced,
       unreviewedReplaced: resource.unreviewedReplaced,
     })),

@@ -288,6 +288,12 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
           "Base-game languages to carry the translated table for: comma-separated codes (en,fi,de) " +
           "or bytes (0x06), or 'all'. Default: the source table's own locale (English)",
       },
+      sparse: {
+        boolean: true,
+        help:
+          "Emit only translated entries, with no English fallback. Requires the game to fall " +
+          "through for omitted keys; unverified, so test before distributing",
+      },
       translations: { help: "Translations file to read" },
       metadata: { help: "Metadata file to read" },
       ...COMMON_CONFIG_FLAG,
@@ -1040,6 +1046,7 @@ function runBuild(parsed: ParsedArgs, config: Config): number {
       ? { gameVersionSource: parsed.values.get("game-version-source")! }
       : {}),
     ...(parsed.values.get("locales") ? { targetLocales: [parsed.values.get("locales")!] } : {}),
+    sparse: parsed.booleans.has("sparse"),
   });
 
   console.log(`Built ${report.outPath}`);
