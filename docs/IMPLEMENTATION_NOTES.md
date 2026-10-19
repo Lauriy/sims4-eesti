@@ -429,22 +429,184 @@ sentence. Both are cheap to check and belong in the in-game gate next to the
 precedence and fall-through probes: a package with one collapsed branch, one
 deleted branch and one replaced pronoun, looked at in a moodlet.
 
+## The locale byte, and where the clock's weekday names live
+
+A string table's 64-bit instance is not opaque: its **high byte is the locale**.
+Measured against the two files installed at different times:
+
+| File | Instance | Entries |
+| --- | --- | --- |
+| `Strings_ENG_US.package` | `0054935F2685AD48` | 58,374 |
+| `Strings_FIN_FI.package` | `0654935F2685AD48` | 58,374 |
+
+The 56-bit base is identical; only the high byte differs (`00` = en_US,
+`06` = fi_FI). The four Finnish reference packages captured earlier confirm
+this for every table this build touches: `BASE_FIN_FI.package` has
+`0654935F2685AD48`, SP06 `06BEA5E1D2845652`, SP08 `06A9BC4CEC99A5F8`, and SP14
+`069DD507B385879F` — exactly the instances `build --locales en,fi` now writes,
+each with the same 56-bit base as its English counterpart. The game loads the table matching the language it runs in, so a
+mod that ships only the English-locale resource is **ignored when the game is set
+to Finnish**. `build --locales en,fi` emits one copy per requested language —
+identical entries, different high byte. This is exactly what the Ukrainian
+translation project does by hand in Sims 4 Studio: their public instruction page
+("Інструкція зі зміни системної мови перекладу", under
+<https://sims4ukrainian.notion.site/bd67c0b217834cb0969a6e5dbcf4012c>) tells players to open every
+language-flagged string table in their `Strings_UKR_UA_…` package and change its
+Locale to the system language they use. Doing it at build time removes the manual
+step, and the manifest records every copy it wrote.
+
+The clock's weekday abbreviations and AM/PM are **not in any string table**, in
+either language:
+
+- exact-value scan of the English base table: 0 weekday values, 0 AM/PM values;
+- the Finnish table: 0 as well (Finnish uses "sunnuntai", "tiistai", … only
+  inside prose);
+- the whole install-wide catalog (75,340 strings, 92 packages): the only exact
+  weekday values are 7 entries in MC Command Center's own translation table
+  (`220557DA:80000000:0024072D2A2C5142`), not the game's; 0 exact AM/PM values
+  and 0 short time-format values. The base game's only short weekday text is a venue
+  schedule, `"Mon 9am - Sun 6pm"` (`682F4294`), which is prose, not the clock;
+- `Data/Client/UI.package` holds no STBL resources at all. Its Scaleform movies
+  `calendar.gfx` and `timecontrols.gfx` contain the text fields
+  `txtWeekday0`…`txtWeekday6` and `txtGameTime`, plus the localization-key
+  constant `CALENDAR_WEEKDAY_NAME`, but no weekday text.
+
+The source is the executable. `Game/Bin/TS4_x64.exe` holds a UTF-16 locale
+registry with one caret-delimited record per language, including the weekday
+and month names. Two records, read directly from the binary:
+
+```
+en^English^English^Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday^
+   Mon.,Tue.,Wed.,Thur.,Fri.,Sat.,Sun.^January,February,...
+fi^Finnish^Suomi^maanantai,tiistai,keskiviikko,torstai,perjantai,lauantai,sunnuntai^
+   Ma,Ti,Ke,To,Pe,La,Su^tammikuu,helmikuu,...
+```
+
+`Mon.` is exactly the English short-day entry in that table, so the clock reads
+its weekday text from the executable, not from any resource this pipeline can
+write. The registry also chooses the time format (`%H:%M` versus `%I:%M %p`).
+An exact UTF-16 search of the executable finds **no** `et-ee`, `Estonian`, or
+`eesti` record: the game ships no Estonian locale data. The install is read-only
+by this project's own rule and the tool does not patch executables, so an
+Estonian clock is out of scope for a package mod. What `--locales` buys instead
+is a choice of base language: with `--locales en,fi`, a player on an English
+game gets Estonian text plus English "Mon."; on a Finnish game they get the same
+Estonian text plus Finnish "Ma". Neither changes the time format, and the
+manifest says which tables were shipped.
+
+The 24-hour format is a separate, UI-level change. A public mod, **Clock – 24
+hours** (Crinlorite, CurseForge), does exactly that as a `.package` interface
+override of the speed/clock panel, with no script, and explicitly keeps the
+weekday in the game's own language while converting only the main HUD clock —
+career, university, calendar and notification times remain 12-hour. Its
+existence is evidence that the clock's *formatting* can be overridden at the UI
+layer, not evidence that a language switch changes it; the Finnish locale record
+in the executable does not expose an obvious 12/24-hour flag (its fields match
+the English record except for language-specific names). That mod is All Rights
+Reserved, so its package or code cannot be reused here; a 24-hour Estonian clock
+would be a separate UI override of `timecontrols.gfx` and, for other panels,
+`calendar.gfx`, with its own licence and maintenance questions.
+
+Where each display lives, and how far the evidence goes:
+
+| Display | UI resource | Weekday text | Time format |
+| --- | --- | --- | --- |
+| Main HUD clock | `timecontrols.gfx` (`62ECC59A:00000000:C4B030271AE45C30`) | executable locale registry, via `DateUtils` | GFX formatting; a UI override can force 24-hour |
+| Calendar | `calendar.gfx` (`62ECC59A:00000000:A5C032C0F84B521F`), fields `txtWeekday0`…`txtWeekday6`, `InitializeWeekdayNames` | no STBL values exist, so also the executable registry | not separately verified |
+| Career / university / notifications | separate panels, not traced | **not verified** | **not verified**; the 24-hour mod explicitly leaves these at 12-hour |
+
+A naive string search across all 258 GFX movies is not evidence of use: 142 of
+them contain the same localization-key and class-library strings, because the
+shared libraries are embedded in each movie. Only `calendar.gfx` contains the
+`txtWeekday` fields and `InitializeWeekdayNames`; the main clock has no weekday
+field of its own and formats through `DateUtils`. This is why a single STBL
+override cannot be expected to change every time display, and why the coverage
+table separates them.
+
+The in-game check remains worth doing as confirmation, not discovery: run the
+game in Finnish and look at the clock — the expectation is `Ma`, `Ti`, … from
+the Finnish registry row, and the time format is whatever the Finnish game
+shows (not assumed to be 24-hour). No claim is made that the Ukrainian project
+localizes its clock; its Notion page documents the locale retag only.
+
+## Pack strings live in Delta, and the root folders can be stale
+
+The three owned stuff packs have both a standalone root folder and a
+`Delta/<pack>` copy. For SP06 the root `Version.ini` records
+`packversion 12.0.136.1020` (2016), while `Delta/SP06/Version.ini` records
+`1.128.90.1030` (2026, the current game version); `Delta/SP06/ResourceClient.cfg`
+gives `Strings_*.package` priority `-9` against `-30` for the full build. The
+Delta table is therefore the live one.
+
+The first pack translation was built from the root copies. Against the Delta
+copies it was missing 22 keys and had 9 changed source texts (of which 5 had
+translations that went stale). The catalog now draws the three packs from
+`Delta/`, the 22 new keys are translated, the five stale entries were re-checked
+and their hashes refreshed, and the 12 translations for keys that no longer
+exist were removed. Whether a Mods package overrides a Delta table at load time
+is still the open precedence question; the base-game override is verified, the
+pack path is not.
+
+## Translating the mods: the first pass
+
+The 88 installed mod packages hold 16,278 English strings. They were exported
+into 25 batches (14,999 distinct entries after text dedupe), translated in
+parallel, pre-validated, and imported: 15,779 accepted, 0 rejected. Coverage:
+
+| Mod group | Entries | Translated |
+| --- | --- | --- |
+| WickedWhims (Tuning) | 6,354 | 6,269 |
+| Basemental Drugs | 4,831 | 4,745 |
+| MC Command Center | 3,201 | 3,161 |
+| All other mods (85 packages) | 1,892 | 1,604 |
+
+The 499 left English are proper names, world names, brand/URL text, progressive
+`Nintendo…` label fragments, and ambiguous duplicate keys.
+
+**Duplicate table IDs are real in mods.** Three pairs ship the same TGI:
+`KhyanTristanScreen`/`KhyanTristanRoomDividerScreen`, `WW_mike24_Animations`/
+`WW_mike24_Classic`, and `WW_mike24_DF`/`WW_mike24_DarkFantasies`. The game loads
+the first-named package, so only that copy is addressable. The build now builds
+the first-named package's table, skips 469 translations belonging to the shadowed
+copies, records `shadowedDuplicateTranslations` in the manifest, warns, and has a
+two-package test for the rule. Without this, the build correctly refused with a
+source-hash mismatch — the catalog had two different texts for one table ID.
+
+**Consistency checks after import.** `glossary-check` found 144 violations across
+the whole corpus: 135 in the base game (mostly idioms and inflections) and 9 in
+mods, nearly all false positives ("final volume", "promotion campaign", "safe and
+sound", "cheat on"). `lint` found 2 findings after fixes, both false positives:
+`pisidetaile` (base game) and `skriptifaile` (valid Estonian partitive plural).
+One real mod wording defect was fixed: a duplicated `kohmakaile ja kohmakale`
+in a Basemental string.
+
+**Not yet observed in game**: whether a package can override another mod's table
+at load time. The first-named-wins rule was measured on game resources; the mod
+path is the next manual check.
+
 ## Known limitations and open questions
 
-1. **Not run in game.** The manual gate in `README.md` is unexecuted. Nothing here
-   claims the game loads the package or renders Estonian letters.
-2. **Load-order precedence in the Mods folder is unverified** (see above).
-3. **SDX files** were not treated as a special case; the brief's [R3] warning about
-   unresolved SDX precedence still stands.
-4. **Runtime-substituted values stay English** (names, money, dates, day names),
-   because no new locale is registered.
+1. **The base-game override was run in game on 2026-10-16** (README Status); the
+   pack tables and the 101 mod-table overrides have not been observed. Nothing here
+   claims the mods render Estonian text yet.
+2. **First-named-package wins** was measured for game resources. Overriding another
+   mod's table, and overriding a `Delta/` table, are unverified (see above).
+3. **SDX files** are still not treated as a special case. Pack strings are read
+   from `Delta/`, but the game's own SDX precedence rules remain the brief's [R3]
+   open question.
+4. **Runtime-substituted values stay in the game's base language** (names, money,
+   dates, day names), because no new game language is registered. The clock's
+   weekday text lives in a locale registry compiled into `TS4_x64.exe`, and the
+   game ships no Estonian record, so `--locales` changes which table the game
+   loads, not how it formats dates. Installing Estonian clock names would require
+   patching the executable, which this project does not do.
 5. **Memory is proportional to package size**, so the multi-gigabyte build
    packages are out of scope until the streaming plugin or an index-only reader is
    added.
-6. **Complex syntax is skipped, not handled.** According to the survey that is
-   ~20,802 brace expressions in gender/plural/pronoun shapes and 9,429 markup
-   tags' worth of strings that stay English. Phase 3 is where they get a real
-   token-aware treatment.
+6. **Some strings stay English by design.** The base game keeps 2,503 entries
+   (names, identifiers, deferred syntax), the three owned packs 72, and the mods
+   499 (proper names, brand text, ambiguous keys). The validator refuses a
+   translation rather than guessing at a construct it cannot verify.
 7. **Stale-source translations are excluded, not flagged in the UI.** They are
    reported in the build output and the manifest (`stale-source`), and the fix is
    to re-translate after re-extracting.

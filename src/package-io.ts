@@ -112,12 +112,6 @@ function readFileOrThrow(filePath: string): Buffer {
 }
 
 /**
- * Reads every string table (and nothing else) from a package.
- *
- * @throws PackageReadError on unreadable input, non-DBPF files, decompression
- * failures, or a package with no string tables.
- */
-/**
  * Lists the resource types a package holds, with counts - "what is in this file"
  * without loading a single resource body. Discovery aid: the game's strings are
  * in STBL resources, but its UI, tuning and locale assets are other types, and
@@ -145,6 +139,53 @@ export function listResourceTypes(filePath: string): { type: string; count: numb
     .sort((a, b) => b.count - a.count);
 }
 
+export interface RawResourceBuffer {
+  type: number;
+  group: number;
+  instance: bigint;
+  /** Decompressed resource bytes, whatever the resource type is. */
+  buffer: Buffer;
+}
+
+/**
+ * Extracts resources of any type as decompressed buffers. A discovery aid for
+ * looking past the string tables (UI assets, tuning, locale data); nothing in
+ * the translation pipeline consumes these bytes.
+ */
+export function extractRawBuffers(
+  filePath: string,
+  options: { type?: number; limit?: number } = {}
+): RawResourceBuffer[] {
+  const buffer = readFileOrThrow(filePath);
+  summarizeDbpfHeader(buffer, filePath);
+  let resources: { key: TgiBig; value: RawResource }[];
+  try {
+    resources = Package.extractResources<RawResource>(buffer, {
+      loadRaw: true,
+      decompressBuffers: true,
+      keepDeletedRecords: false,
+      ...(options.type === undefined
+        ? {}
+        : { resourceFilter: (type: number): boolean => type === options.type }),
+      ...(options.limit === undefined ? {} : { limit: options.limit }),
+    }) as { key: TgiBig; value: RawResource }[];
+  } catch (error) {
+    throw new PackageReadError(`Failed to extract resources from "${filePath}": ${(error as Error).message}`);
+  }
+  return resources.map(({ key, value }) => ({
+    type: key.type,
+    group: key.group,
+    instance: key.instance,
+    buffer: value.buffer,
+  }));
+}
+
+/**
+ * Reads every string table (and nothing else) from a package.
+ *
+ * @throws PackageReadError on unreadable input, non-DBPF files, decompression
+ * failures, or a package with no string tables.
+ */
 export function readStblTables(filePath: string): ReadStblResult {
   const buffer = readFileOrThrow(filePath);
   const header = summarizeDbpfHeader(buffer, filePath);

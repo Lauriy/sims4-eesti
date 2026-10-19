@@ -22,10 +22,19 @@ import {
   writeJsonAtomic,
   type Catalog,
   type CatalogOccurrence,
+  type CatalogResource,
   type SourceFacts,
 } from "./catalog.js";
 import { sha256Hex, sha256File } from "./hashing.js";
-import { formatTgi, hex8, localeByteOf, parseHex8, toTgi } from "./ids.js";
+import {
+  allLocaleCodes,
+  formatTgi,
+  hex8,
+  localeByteFromCode,
+  localeByteOf,
+  parseHex8,
+  toTgi,
+} from "./ids.js";
 import {
   readRawStblBuffers,
   readStblTables,
@@ -63,6 +72,14 @@ export interface BuildOptions {
   packagePath?: string;
   gameVersion?: string;
   gameVersionSource?: string;
+  /**
+   * Base-game languages to carry the translated tables for, as locale codes
+   * (`fi`) or bytes (`0x06`); `all` means every locale the game ships. Each
+   * copy is identical except for the locale byte in its instance, so the game
+   * loads the Estonian text whichever supported language it runs in. Defaults
+   * to the source table's own locale (English).
+   */
+  targetLocales?: string[];
 }
 
 export interface ExcludedEntry {
@@ -104,6 +121,8 @@ export interface BuildReport {
     unreviewedApplied: number;
     resourcesEmitted: number;
     resourcesSkipped: number;
+    /** Translations skipped because a first-named package already owns that table ID. */
+    shadowedDuplicateTranslations: number;
   };
   excluded: ExcludedEntry[];
   warnings: string[];
@@ -182,9 +201,65 @@ interface AppliedReplacement {
   reviewed: boolean;
 }
 
+/** Expands `--locales` into the distinct locale bytes to emit, or null for "source only". */
+function parseTargetLocales(requested: string[] | undefined): number[] | null {
+  if (!requested || requested.length === 0) return null;
+  const bytes = new Set<number>();
+  for (const item of requested) {
+    for (const part of item.split(",")) {
+      const text = part.trim();
+      if (!text) continue;
+      if (text.toLowerCase() === "all") {
+        for (const locale of allLocaleCodes()) bytes.add(locale.byte);
+      } else {
+        try {
+          bytes.add(localeByteFromCode(text));
+        } catch (error) {
+          throw new BuildError((error as Error).message);
+        }
+      }
+    }
+  }
+  if (bytes.size === 0) {
+    throw new BuildError(`--locales was given no locale codes.`);
+  }
+  return [...bytes].sort((a, b) => a - b);
+}
+
+/** Replaces the locale byte (high byte) of a string-table instance. */
+function withLocaleByte(instance: bigint, localeByte: number): bigint {
+  return (instance & 0x00ffffffffffffffn) | (BigInt(localeByte) << 56n);
+}
+
+/**
+ * The game loads the first-named package for a conflicting resource
+ * (probes/precedence, observed twice on 2026-10-16). When two packages ship the
+ * same table ID, only the first-named one is addressable; the other is shadowed.
+ */
+function packageOrderKey(packagePath: string): string {
+  return basename(packagePath).toLowerCase();
+}
+
 export function buildPackage(options: BuildOptions): BuildReport {
   const catalog: Catalog = loadCatalog(options.catalogPath);
   const manifestPath = options.manifestPath ?? defaultManifestPath(options.outPath);
+  const targetLocaleBytes = parseTargetLocales(options.targetLocales);
+
+  // A resource ID is not guaranteed to be unique across mod packages. Group the
+  // catalog's resources and keep the one the game would actually load.
+  const resourcesByTgi = new Map<string, CatalogResource[]>();
+  for (const resource of catalog.resources) {
+    const list = resourcesByTgi.get(resource.tgi) ?? [];
+    list.push(resource);
+    resourcesByTgi.set(resource.tgi, list);
+  }
+  const winnerByTgi = new Map<string, CatalogResource>();
+  for (const [tgi, list] of resourcesByTgi) {
+    const winner = [...list].sort((a, b) =>
+      packageOrderKey(a.packagePath).localeCompare(packageOrderKey(b.packagePath), "en")
+    )[0]!;
+    winnerByTgi.set(tgi, winner);
+  }
 
   // A catalog may draw on many packages (Phase 2's install-wide scan). Sources are
   // therefore resolved per package, and the single-package `--package` override is
@@ -236,6 +311,7 @@ export function buildPackage(options: BuildOptions): BuildReport {
   const excludedByCode: Partial<Record<IssueCode, number>> = {};
   const planned = new Map<string, PlannedReplacement[]>();
   let unknownIds = 0;
+  let shadowedDuplicates = 0;
 
   for (const occurrenceId of Object.keys(translations).sort()) {
     const text = translations[occurrenceId]!;
@@ -252,6 +328,14 @@ export function buildPackage(options: BuildOptions): BuildReport {
         ],
       });
       excludedByCode["unknown-occurrence"] = (excludedByCode["unknown-occurrence"] ?? 0) + 1;
+      continue;
+    }
+
+    const winner = winnerByTgi.get(occurrence.resourceTgi);
+    if (winner && occurrence.packageLabel !== winner.packageLabel) {
+      // Another, first-named package owns this table ID; the game never loads
+      // this copy, so applying its translation would target the wrong table.
+      shadowedDuplicates += 1;
       continue;
     }
 
@@ -302,7 +386,9 @@ export function buildPackage(options: BuildOptions): BuildReport {
 
   // 2. Re-read the source tables - from whichever package each resource lives in -
   //    and replace only eligible entries.
-  const resourceByTgi = new Map(catalog.resources.map((resource) => [resource.tgi, resource]));
+  const resourceByTgi = new Map<string, CatalogResource>(
+    [...winnerByTgi.entries()].map(([tgi, resource]) => [tgi, resource])
+  );
   const tablesByTgi = new Map<string, { table: RawTable; label: string }>();
   const packagesRead = new Set<string>();
   for (const tgi of planned.keys()) {
@@ -320,7 +406,11 @@ export function buildPackage(options: BuildOptions): BuildReport {
     if (packagesRead.has(facts.label)) continue;
     packagesRead.add(facts.label);
     for (const table of readStblTables(facts.path).tables) {
-      tablesByTgi.set(formatTgi(toTgi(table)), { table, label: facts.label });
+      const tgi = formatTgi(toTgi(table));
+      const existing = tablesByTgi.get(tgi);
+      if (!existing || winnerByTgi.get(tgi)?.packageLabel === facts.label) {
+        tablesByTgi.set(tgi, { table, label: facts.label });
+      }
     }
   }
 
@@ -329,6 +419,15 @@ export function buildPackage(options: BuildOptions): BuildReport {
   const expectedTables = new Map<string, RawEntry[]>();
   const resourceReports: EmittedResource[] = [];
   let resourcesSkipped = catalog.resources.length - affectedTgis.length;
+  let appliedTranslations = 0;
+  let reviewedApplied = 0;
+  for (const list of planned.values()) {
+    for (const replacement of list) {
+      appliedTranslations += 1;
+      if (replacement.state === "reviewed") reviewedApplied += 1;
+    }
+  }
+  let uniqueEntryCount = 0;
 
   for (const tgi of affectedTgis) {
     const found = tablesByTgi.get(tgi);
@@ -385,17 +484,26 @@ export function buildPackage(options: BuildOptions): BuildReport {
       return { key: entry.key, text: replacement.text };
     });
 
-    writtenTables.push({ type: table.type, group: table.group, instance: table.instance, entries });
-    expectedTables.set(tgi, entries);
-    resourceReports.push({
-      tgi,
-      localeByte: hex8(localeByteOf(table.instance)).slice(-2),
-      entryCount: entries.length,
-      replaced,
-      leftInEnglish: entries.length - replaced,
-      reviewedReplaced,
-      unreviewedReplaced,
-    });
+    uniqueEntryCount += entries.length;
+    // One copy per requested base-game locale. The entries are identical; only
+    // the locale byte in the instance differs, which is what makes the game load
+    // the copy that matches the language it is running in.
+    const localeBytes = targetLocaleBytes ?? [localeByteOf(table.instance)];
+    for (const localeByte of localeBytes) {
+      const instance = withLocaleByte(table.instance, localeByte);
+      const variantTgi = formatTgi(toTgi({ type: table.type, group: table.group, instance }));
+      writtenTables.push({ type: table.type, group: table.group, instance, entries });
+      expectedTables.set(variantTgi, entries);
+      resourceReports.push({
+        tgi: variantTgi,
+        localeByte: hex8(localeByte).slice(-2),
+        entryCount: entries.length,
+        replaced,
+        leftInEnglish: entries.length - replaced,
+        reviewedReplaced,
+        unreviewedReplaced,
+      });
+    }
   }
 
   // 3. Write through a temporary file, verify it, then move it into place.
@@ -424,11 +532,28 @@ export function buildPackage(options: BuildOptions): BuildReport {
     excludedByCode,
     unknownIds,
     translationsCount: Object.keys(translations).length,
+    appliedTranslations,
+    reviewedApplied,
+    uniqueEntryCount,
+    shadowedDuplicates,
   });
   writeJsonAtomic(manifestPath, manifest);
 
-  const appliedResources = resourceReports.reduce((sum, resource) => sum + resource.replaced, 0);
   const warnings: string[] = [];
+  if (targetLocaleBytes && options.targetLocales && targetLocaleBytes.length > 0) {
+    const sourceLocales = new Set(resourceReports.map((resource) => resource.localeByte));
+    const sourceLocaleBytes = new Set(
+      [...tablesByTgi.values()].map(({ table }) => hex8(localeByteOf(table.instance)).slice(-2))
+    );
+    for (const sourceLocale of sourceLocaleBytes) {
+      if (!sourceLocales.has(sourceLocale)) {
+        warnings.push(
+          `--locales does not include the source table's locale (${sourceLocale}); the package will ` +
+            `not override that language.`
+        );
+      }
+    }
+  }
   if (unknownIds > 0) {
     warnings.push(
       `${unknownIds} translation(s) reference occurrence IDs that are not in the catalog and were ` +
@@ -447,6 +572,13 @@ export function buildPackage(options: BuildOptions): BuildReport {
       `${stale} translation(s) were made from different English text and were not applied.`
     );
   }
+  if (shadowedDuplicates > 0) {
+    warnings.push(
+      `${shadowedDuplicates} translation(s) belong to a package that ships the same table ID as a ` +
+        `first-named package. The game loads the first-named copy, so those translations were not ` +
+        `applied; the winning package's copy is the one emitted.`
+    );
+  }
   if (catalog.warnings.length > 0) {
     warnings.push(...catalog.warnings.slice(0, 5));
   }
@@ -462,17 +594,15 @@ export function buildPackage(options: BuildOptions): BuildReport {
     counts: {
       catalogOccurrences: catalog.occurrences.length,
       translationsInFile: Object.keys(translations).length,
-      applied: appliedResources,
+      applied: appliedTranslations,
       excluded: excluded.length,
       excludedByCode,
       unknownIds,
-      reviewedApplied: resourceReports.reduce((sum, resource) => sum + resource.reviewedReplaced, 0),
-      unreviewedApplied: resourceReports.reduce(
-        (sum, resource) => sum + resource.unreviewedReplaced,
-        0
-      ),
+      reviewedApplied,
+      unreviewedApplied: appliedTranslations - reviewedApplied,
       resourcesEmitted: resourceReports.length,
       resourcesSkipped,
+      shadowedDuplicateTranslations: shadowedDuplicates,
     },
     excluded,
     warnings,
@@ -606,14 +736,21 @@ interface ManifestInput {
   excludedByCode: Partial<Record<IssueCode, number>>;
   unknownIds: number;
   translationsCount: number;
+  /** Logical translations applied once, even when a table is emitted for several locales. */
+  appliedTranslations: number;
+  reviewedApplied: number;
+  /** Entries across the distinct source tables, not across their locale copies. */
+  uniqueEntryCount: number;
+  /** Translations ignored because a first-named package owns the same table ID. */
+  shadowedDuplicates: number;
 }
 
 function buildManifest(input: ManifestInput): Record<string, unknown> {
   const { options, catalog, resources } = input;
-  const replaced = resources.reduce((sum, resource) => sum + resource.replaced, 0);
-  const entries = resources.reduce((sum, resource) => sum + resource.entryCount, 0);
-  const reviewed = resources.reduce((sum, resource) => sum + resource.reviewedReplaced, 0);
-  const unreviewed = resources.reduce((sum, resource) => sum + resource.unreviewedReplaced, 0);
+  const replaced = input.appliedTranslations;
+  const entries = input.uniqueEntryCount;
+  const reviewed = input.reviewedApplied;
+  const unreviewed = replaced - reviewed;
 
   return {
     schemaVersion: BUILD_MANIFEST_SCHEMA_VERSION,
@@ -662,11 +799,13 @@ function buildManifest(input: ManifestInput): Record<string, unknown> {
             "not recorded — no --game-version was passed, so no version is claimed for this artifact",
         },
     locale: {
-      overridden: [...new Set(resources.map((resource) => resource.localeByte))].join(","),
+      overridden: [...new Set(resources.map((resource) => resource.localeByte))].sort().join(","),
       note:
-        "Locale byte of the overridden string-table resources (high byte of the instance; 00 = en_US). " +
-        "The original English resource identity is preserved exactly. No new locale is registered: the " +
-        "game keeps running in English and this package overrides the text of the same resources.",
+        "Each translated string table is emitted once per requested base-game locale; the locale is the " +
+        "high byte of the resource instance (00 = en_US, 06 = fi_FI). The instance base and every entry " +
+        "are identical between copies. The game loads the copy whose locale byte matches the language " +
+        "it is running in and is not otherwise modified. This package does not add a language to the " +
+        "game's language menu; with --locales omitted, only the source table's own locale is emitted.",
     },
     resources: resources.map((resource) => ({
       tgi: resource.tgi,
@@ -687,6 +826,7 @@ function buildManifest(input: ManifestInput): Record<string, unknown> {
       excludedTranslations: input.excluded.length,
       excludedByCode: input.excludedByCode,
       unknownOccurrenceIds: input.unknownIds,
+      shadowedDuplicateTranslations: input.shadowedDuplicates,
       resourcesEmitted: resources.length,
     },
     exclusions: input.excluded.map((entry) => ({

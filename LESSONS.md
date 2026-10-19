@@ -145,7 +145,24 @@ loanwords (`teline`, `kitara`, `fantasia`), while missing the actual defect, whi
 appears three times. **The detector that looks principled can be worse than the
 one that encodes the actual failure.**
 
-## 10. Working habits that cost real time here
+## 10. A string in every UI movie proves nothing about any one of them
+
+Looking for the clock's weekday names, I scanned all 258 Scaleform movies for
+`CALENDAR_WEEKDAY_NAME`, `txtGameTime`, `DateUtils` and similar. 142 of 258
+matched, including the credits screen and the options menu, because every movie
+embeds the same shared class libraries. The discriminating fields were the ones
+that did not appear everywhere: `txtWeekday0..6` and `InitializeWeekdayNames`
+exist only in `calendar.gfx`.
+
+The weekday text itself was in neither the movies nor any STBL. It is a UTF-16
+locale registry inside `TS4_x64.exe` (`en` → `Mon.,Tue.,...`, `fi` →
+`Ma,Ti,...`, no Estonian record). Seven exact weekday strings do exist in the
+install-wide catalog, but all seven belong to MC Command Center's own table, not
+the game's. A broad search tells you where a word appears, not who reads it;
+negative evidence has to come from the data source the code is actually wired
+to.
+
+## 11. Working habits that cost real time here
 
 - **Write code containing backslashes through files, not shell heredocs.** Git
   Bash halved `\\` to `\` repeatedly, corrupting regexes, string literals and one

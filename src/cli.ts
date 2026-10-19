@@ -283,6 +283,11 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
       "game-version-source": {
         help: "Where that version string came from, recorded alongside it",
       },
+      locales: {
+        help:
+          "Base-game languages to carry the translated table for: comma-separated codes (en,fi,de) " +
+          "or bytes (0x06), or 'all'. Default: the source table's own locale (English)",
+      },
       translations: { help: "Translations file to read" },
       metadata: { help: "Metadata file to read" },
       ...COMMON_CONFIG_FLAG,
@@ -1034,6 +1039,7 @@ function runBuild(parsed: ParsedArgs, config: Config): number {
     ...(parsed.values.get("game-version-source")
       ? { gameVersionSource: parsed.values.get("game-version-source")! }
       : {}),
+    ...(parsed.values.get("locales") ? { targetLocales: [parsed.values.get("locales")!] } : {}),
   });
 
   console.log(`Built ${report.outPath}`);
@@ -1047,7 +1053,7 @@ function runBuild(parsed: ParsedArgs, config: Config): number {
   console.log("");
   for (const resource of report.resources) {
     console.log(
-      `  table ${resource.tgi}: ${resource.replaced} replaced ` +
+      `  table ${resource.tgi} (locale ${resource.localeByte}): ${resource.replaced} replaced ` +
         `(${resource.reviewedReplaced} reviewed, ${resource.unreviewedReplaced} unreviewed), ` +
         `${resource.leftInEnglish} kept in English, ${resource.entryCount} entries total`
     );

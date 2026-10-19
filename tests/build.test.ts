@@ -13,9 +13,9 @@ import { after, before, describe, it } from "node:test";
 import { buildPackage, BuildError } from "../src/build.js";
 import { extractCatalog, loadCatalog, type Catalog } from "../src/catalog.js";
 import { sha256File, sha256Hex } from "../src/hashing.js";
-import { hex16 } from "../src/ids.js";
+import { hex16, localeByteFromCode } from "../src/ids.js";
 import { readStblTables } from "../src/package-io.js";
-import type { TranslationMap } from "../src/translations.js";
+import { emptyMetadata, type TranslationMap } from "../src/translations.js";
 import { REAL_ENGLISH_INSTANCE, SAMPLE_KEYS, makeTempDir, removeDir, writeFixturePackage } from "./helpers.js";
 
 const ENGLISH_TGI = `220557DA:00000000:${hex16(REAL_ENGLISH_INSTANCE)}`;
@@ -104,6 +104,17 @@ after(() => {
   removeDir(dir);
 });
 
+describe("locale codes", () => {
+  it("parses named codes and two-digit bytes, with named codes winning", () => {
+    assert.equal(localeByteFromCode("en"), 0);
+    assert.equal(localeByteFromCode("fi"), 6);
+    assert.equal(localeByteFromCode("de"), 8, "de is German, not byte 0xDE");
+    assert.equal(localeByteFromCode("0x06"), 6);
+    assert.equal(localeByteFromCode("06"), 6);
+    assert.throws(() => localeByteFromCode("xx"), /Unknown locale/);
+  });
+});
+
 describe("whole-table override build", () => {
   it("emits only affected tables and keeps every other entry in English", () => {
     writeTranslations([
@@ -131,6 +142,47 @@ describe("whole-table override build", () => {
     assert.equal(english.entries[4]!.text, "{{0.String}} house", "a deferred string keeps English");
     assert.equal(english.entries[5]!.text, "", "empty entry stays empty");
     assert.equal(read.tables[1]!.entries[0]!.text, "Jätka");
+  });
+
+  it("can carry the same translated table for several base-game locales", () => {
+    writeTranslations([
+      { id: occurrenceIdOf("New Game"), text: "Uus mäng", state: "reviewed" },
+      { id: occurrenceIdOf("Hello, {0.SimFirstName}!"), text: "Tere, {0.SimFirstName}!", state: "reviewed" },
+      { id: occurrenceIdOf("Resume"), text: "Jätka", state: "reviewed" },
+    ]);
+
+    const report = buildTo("locales.package", { targetLocales: ["en", "fi"] });
+    assert.equal(report.counts.applied, 3, "applied counts translations, not locale copies");
+    assert.equal(report.resources.length, 4, "two affected tables times two locales");
+
+    const read = readStblTables(report.outPath);
+    assert.equal(read.tables.length, 4);
+    const localeOf = (instance: bigint): number => Number((instance >> 56n) & 0xffn);
+    const baseOf = (instance: bigint): bigint => instance & 0x00ffffffffffffffn;
+    assert.deepEqual(read.tables.map((table) => localeOf(table.instance)).sort(), [0, 0, 6, 6]);
+
+    const byBaseAndLocale = new Map<string, (typeof read.tables)[number]>();
+    for (const table of read.tables) {
+      byBaseAndLocale.set(`${baseOf(table.instance).toString(16)}:${localeOf(table.instance)}`, table);
+    }
+    for (const table of read.tables.filter((item) => localeOf(item.instance) === 0)) {
+      const copy = byBaseAndLocale.get(`${baseOf(table.instance).toString(16)}:6`);
+      assert.ok(copy, "every English copy has a Finnish-locale twin");
+      assert.deepEqual(
+        copy.entries,
+        table.entries,
+        "copies differ only in the locale byte, never in an entry"
+      );
+      assert.equal(copy.type, table.type);
+      assert.equal(copy.group, table.group);
+    }
+
+    const manifest = JSON.parse(readFileSync(report.manifestPath, "utf8")) as {
+      counts: { applied: number };
+      locale: { overridden: string };
+    };
+    assert.equal(manifest.counts.applied, 3, "the manifest reports logical translations once");
+    assert.equal(manifest.locale.overridden, "00,06");
   });
 
   it("records the source fingerprint, counts and output hash in the manifest", () => {
@@ -424,5 +476,70 @@ describe("catalog/package consistency", () => {
         error instanceof BuildError && /Catalog is inconsistent with the source package/.test(error.message)
     );
     assert.equal(existsSync(join(dir, "tampered.package")), false);
+  });
+});
+
+describe("duplicate table IDs across packages", () => {
+  it("builds the first-named package's table and ignores the shadowed copy", () => {
+    const dupDir = makeTempDir("dup-tgi");
+    try {
+      const instance = 0x00000000cafebaben;
+      const winnerPath = join(dupDir, "aaa_winner.package");
+      const loserPath = join(dupDir, "zzz_loser.package");
+      writeFixturePackage(winnerPath, [
+        { instance, entries: [{ key: SAMPLE_KEYS.newGame, text: "Winner source" }] },
+      ]);
+      writeFixturePackage(loserPath, [
+        { instance, entries: [{ key: SAMPLE_KEYS.newGame, text: "Loser source" }] },
+      ]);
+
+      const winner = extractCatalog({ packagePath: winnerPath, packLabel: "AAA", outDir: join(dupDir, "aaa") });
+      const loser = extractCatalog({ packagePath: loserPath, packLabel: "ZZZ", outDir: join(dupDir, "zzz") });
+      const merged: Catalog = {
+        ...winner.catalog,
+        packLabel: "MERGED",
+        packages: [...winner.catalog.packages, ...loser.catalog.packages],
+        resources: [...winner.catalog.resources, ...loser.catalog.resources],
+        occurrences: [...winner.catalog.occurrences, ...loser.catalog.occurrences],
+        warnings: [],
+      };
+      const catalogPath2 = join(dupDir, "catalog.json");
+      writeFileSync(catalogPath2, JSON.stringify(merged, null, 2));
+
+      const translations: TranslationMap = {};
+      const metadata = emptyMetadata();
+      for (const occurrence of merged.occurrences) {
+        translations[occurrence.occurrenceId] =
+          occurrence.packageLabel === "AAA" ? "Võitja tekst" : "Kaotaja tekst";
+        metadata.entries[occurrence.occurrenceId] = {
+          state: "machine",
+          sourceHash: occurrence.sourceHash,
+          updatedAt: new Date().toISOString(),
+          origin: "machine",
+        };
+      }
+      const translationsPath2 = join(dupDir, "et-EE.json");
+      const metadataPath2 = join(dupDir, "metadata.json");
+      writeFileSync(translationsPath2, JSON.stringify(translations));
+      writeFileSync(metadataPath2, JSON.stringify(metadata));
+
+      const report = buildPackage({
+        catalogPath: catalogPath2,
+        outPath: join(dupDir, "out.package"),
+        translationsPath: translationsPath2,
+        metadataPath: metadataPath2,
+        includeUnreviewed: true,
+      });
+
+      assert.equal(report.counts.applied, 1, "only the first-named package's translation applies");
+      assert.equal(report.counts.shadowedDuplicateTranslations, 1);
+      assert.match(report.warnings.join("\n"), /first-named package/);
+
+      const read = readStblTables(report.outPath);
+      assert.equal(read.tables.length, 1);
+      assert.equal(read.tables[0]!.entries[0]!.text, "Võitja tekst");
+    } finally {
+      removeDir(dupDir);
+    }
   });
 });

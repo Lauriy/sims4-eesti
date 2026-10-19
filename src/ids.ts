@@ -154,6 +154,28 @@ export function localeCodeOf(localeByte: number): string {
   return LOCALE_CODES[localeByte] ?? `0x${localeByte.toString(16).padStart(2, "0")}`;
 }
 
+/** Every locale code the game ships a string table for, as `[byte, code]` pairs. */
+export function allLocaleCodes(): { byte: number; code: string }[] {
+  return Object.entries(LOCALE_CODES).map(([byte, code]) => ({ byte: Number(byte), code }));
+}
+
+/**
+ * Parses a locale given either by code (`fi`) or by byte (`0x06`, `06`). Named
+ * codes win over hex when the text is both, so `de` is German, not byte 0xDE.
+ */
+export function localeByteFromCode(text: string): number {
+  const trimmed = text.trim().toLowerCase();
+  for (const [byte, code] of Object.entries(LOCALE_CODES)) {
+    if (code.toLowerCase() === trimmed) return Number(byte);
+  }
+  if (/^0x[0-9a-f]{2}$/.test(trimmed)) return Number.parseInt(trimmed.slice(2), 16);
+  if (/^[0-9a-f]{2}$/.test(trimmed)) return Number.parseInt(trimmed, 16);
+  throw new Error(
+    `Unknown locale "${text}". Use a code such as ${Object.values(LOCALE_CODES).slice(0, 6).join(", ")}, ` +
+      `or a two-digit byte such as 0x06.`
+  );
+}
+
 /**
  * Languages to show a translator, best first. Finnish leads deliberately: it is
  * Finno-Ugric like Estonian, has no grammatical gender and uses cases, so it

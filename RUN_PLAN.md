@@ -1,9 +1,14 @@
 # How the bulk run is sequenced, and why
 
-State at the time of writing: 4,043 of 75,340 strings translated and deployed
-(the base game's most-seen 1,000 plus a syntax slice, and the three stuff packs in
-full). 71,292 occurrences remain, 55,015 of them the game's own text and 16,277 a
-mod's.
+**Updated 2026-10-19:** waves 1–3 are complete. 72,275 of 75,349 strings are
+translated and deployed; 71,806 were applied to the built package (469 belong to
+mod packages shadowed by a first-named copy of the same table ID). The remaining
+3,074 are deferred syntax, proper names, brand fragments and ambiguous keys.
+
+State at the time of writing (original plan): 4,043 of 75,340 strings translated
+and deployed (the base game's most-seen 1,000 plus a syntax slice, and the three
+stuff packs in full). 71,292 occurrences remain, 55,015 of them the game's own
+text and 16,277 a mod's.
 
 ## Wave 1 — the game's own text (55,015)
 
@@ -31,7 +36,7 @@ Translated as whole tables in the first beta, before the glossary existed. Re-ru
 `glossary-check` over them at the end rather than re-translating: their tables are
 small, and the check tells us whether anything needs a second look.
 
-## Wave 3 — the mods (16,277), largest first
+## Wave 3 — the mods (16,277), largest first (done 2026-10-19)
 
 | Mod | Strings |
 | --- | --- |
