@@ -117,6 +117,34 @@ function readFileOrThrow(filePath: string): Buffer {
  * @throws PackageReadError on unreadable input, non-DBPF files, decompression
  * failures, or a package with no string tables.
  */
+/**
+ * Lists the resource types a package holds, with counts - "what is in this file"
+ * without loading a single resource body. Discovery aid: the game's strings are
+ * in STBL resources, but its UI, tuning and locale assets are other types, and
+ * knowing which type holds what is the difference between "findable" and "not".
+ */
+export function listResourceTypes(filePath: string): { type: string; count: number }[] {
+  const buffer = readFileOrThrow(filePath);
+  const header = summarizeDbpfHeader(buffer, filePath);
+  let pkg: Package<RawResource>;
+  try {
+    const parsed = Package.from(buffer);
+    if (!(parsed instanceof Package)) throw new Error("not a package");
+    pkg = parsed as Package<RawResource>;
+  } catch (error) {
+    throw new PackageReadError(`Could not parse "${filePath}": ${(error as Error).message}`);
+  }
+  const counts = new Map<string, number>();
+  for (const entry of pkg.entries) {
+    const type = entry.key.type.toString(16).toUpperCase().padStart(8, "0");
+    counts.set(type, (counts.get(type) ?? 0) + 1);
+  }
+  void header;
+  return [...counts.entries()]
+    .map(([type, count]) => ({ type, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export function readStblTables(filePath: string): ReadStblResult {
   const buffer = readFileOrThrow(filePath);
   const header = summarizeDbpfHeader(buffer, filePath);
