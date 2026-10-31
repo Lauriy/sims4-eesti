@@ -1,5 +1,12 @@
 # Phase 2 design — installation-wide catalogs and patch updates
 
+> **Historical design document (2026-10-15).** It describes the design before the
+> pipeline was built; the implementation is in `src/` and documented in
+> `README.md`. Two things have moved since: the 2026-10-31 machine reads pack
+> strings from `Delta/<pack>` with `scan --prefer-delta`, and the open precedence
+> questions below (including Mods vs `Delta`) are still open — see
+> `IMPLEMENTATION_NOTES.md` and `probes/precedence/README.md`.
+
 Design document, **not** an implementation. Phase 1 covered one supplied package;
 Phase 2 covers everything the player has installed, and keeps translations alive
 across game updates. Grounded in measurements taken on this machine (game
@@ -71,10 +78,12 @@ starts with a precedence probe, not with a scanner:
   could be creation or index order — so it is recorded as "first-named won", not
   as "alphabetical order decides".
 
-SDX (`Delta`) stays **out of scope for catalogs** until this is answered: files
-are detected, counted and reported as excluded, and the manifest says so. The
-brief's warning about copying an upstream extraction order as authoritative
-stands.
+SDX (`Delta`) stayed **out of scope for catalogs** until this was answered; the
+default scan still detects, counts and reports Delta files as excluded. **Since
+2026-10-31** the DLC machine uses `scan --prefer-delta` to read the live
+`Delta/<pack>` string files and label them by pack code, because the root copies
+are stale; Mods-vs-Delta precedence itself is still unmeasured. The brief's
+warning about copying an upstream extraction order as authoritative stands.
 
 ## Discovery
 

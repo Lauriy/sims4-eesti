@@ -34,6 +34,8 @@ mkdirSync(outDir, { recursive: true });
 
 /** The base game's "New Game" entry — visible on the main menu the moment the game starts. */
 const NEW_GAME_KEY = 0x0dfed87c;
+/** The base game's "Options" entry, the second positive control. */
+const OPTIONS_KEY = 0xd9f5efca;
 
 // SP06 = Romantic Garden Stuff. Two of these are renamed by the probe (so the
 // tester can see the package loaded at all); the flower is deliberately left out
@@ -93,11 +95,30 @@ if (pack.entries.some((entry) => entry.key === FALLTHROUGH_TARGET.key) === false
 }
 writePackageFile(join(outDir, "sparse_probe.package"), [{ ...pack, entries: sparseEntries }]);
 
+// --- experiment B2: sparse override of the *base* table ---------------------
+// The same question, but on the table a base-game-only release would ship. Two
+// entries only: if the game does not fall through, the damage is two labels, not
+// the whole interface.
+writePackageFile(join(outDir, "base_sparse_probe.package"), [
+  {
+    ...base,
+    entries: [
+      { key: NEW_GAME_KEY, text: "BASE-SPARSE-NEWGAME" },
+      { key: OPTIONS_KEY, text: "BASE-SPARSE-OPTIONS" },
+    ],
+  },
+]);
+
 const size = (name: string) => `${(statSync(join(outDir, name)).size / 1024).toFixed(0)} KiB`;
-console.log(`Wrote three probe packages to ${outDir}\n`);
+console.log(`Wrote five probe packages to ${outDir}\n`);
 console.log(`A. precedence (Mods vs Mods):`);
 console.log(`   aaa_probe.package   ${size("aaa_probe.package")}  ${baseTgi}, "New Game" -> "PROBE-AAA"`);
 console.log(`   zzz_probe.package   ${size("zzz_probe.package")}  same resource identity, -> "PROBE-ZZZ"`);
+console.log(`B2. fall-through (sparse override of the base table):`);
+console.log(`   base_sparse_probe.package ${size("base_sparse_probe.package")}  ${baseTgi}`);
+console.log(`      contains 2 of the base table's ${base.entries.length} entries:`);
+console.log(`        "New Game" -> "BASE-SPARSE-NEWGAME", "Options" -> "BASE-SPARSE-OPTIONS"`);
+console.log(`      every other main-menu label is omitted; they must still read English.`);
 console.log(`B. fall-through (sparse override of a pack table):`);
 console.log(`   sparse_probe.package ${size("sparse_probe.package")}  ${packTgi}`);
 console.log(`      contains 2 of that table's ${pack.entries.length} entries:`);

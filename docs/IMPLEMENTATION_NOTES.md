@@ -1,11 +1,12 @@
-# Implementation notes — Phase 1
+# Implementation notes — measurements and findings
 
-Technical record of what was actually built, tested, and observed while
-implementing the Phase 1 prototype described in `Sims4_Eesti_Implementation_Brief.md`.
-Everything here was measured on this machine; nothing is assumed from upstream
+Technical record of what was actually built, tested, and observed for the Phase 1
+prototype described in `Sims4_Eesti_Implementation_Brief.md`, and of the later
+measurements on a second, DLC-heavy machine (2026-10-31). Everything here was
+measured on the machine named in each section; nothing is assumed from upstream
 documentation.
 
-## Environment actually used
+## Environment — first machine (2026-10-16 to 2026-10-20)
 
 | Thing | Version |
 | --- | --- |
@@ -18,6 +19,21 @@ documentation.
 | tsx | 4.23.15 |
 | Test game | The Sims 4 **1.128.90.1030**, Steam install, `en_US` |
 | Source file used | `...\The Sims 4\Data\Client\Strings_ENG_US.package`, sha256 `6388f33b95f4fc0c2ba22f67f0a4dbb085aedc6ad217e2a5420377e29bd8f9af`, 6,313,691 bytes |
+
+## Environment — second machine (2026-10-31)
+
+| Thing | Version |
+| --- | --- |
+| OS | Windows 11 Pro, build 26300 |
+| Node.js | v22.22.0 (installed per-user via winget; `choco` needs elevation) |
+| npm | 10.9.4 |
+| TypeScript | 7.0.2 (`tsc --noEmit`, strict) |
+| `@s4tk/models` | 0.6.14 (the pinned dependency, unchanged) |
+| `@s4tk/compression` | 0.2.0 (unchanged) |
+| tsx | 4.23.15 |
+| Test game | The Sims 4 **1.129.39.1030**, Steam install, `en_US` |
+| Source file | `...\The Sims 4\Data\Client\Strings_ENG_US.package`, sha256 `82cd373eace8f91f119d4e7d3e777157424da36716aaac1d8da13ec4f924f022`, 6.02 MiB, 58,419 entries |
+| Pack strings | `Delta/<pack>/Strings_ENG_US.package` (116 tables) |
 
 `@s4tk/compression` is a direct dependency even though it arrives with
 `@s4tk/models`, because the adapter uses its public `CompressionType` enum; the
@@ -544,8 +560,9 @@ translations that went stale). The catalog now draws the three packs from
 `Delta/`, the 22 new keys are translated, the five stale entries were re-checked
 and their hashes refreshed, and the 12 translations for keys that no longer
 exist were removed. Whether a Mods package overrides a Delta table at load time
-is still the open precedence question; the base-game override is verified, the
-pack path is not.
+was the open precedence question. On 2026-10-31 an EP01-only package rendered
+Estonian in game, so the answer is yes: the Mods copy replaces the live
+`Delta/<pack>` table.
 
 ## Translating the mods: the first pass
 
@@ -584,23 +601,26 @@ in a Basemental string.
 at load time. The first-named-wins rule was measured on game resources; the mod
 path is the next manual check.
 
-`build --sparse` now emits only translated entries, with no English fallback. It
-is tested at the package level (the omitted entries are genuinely absent), but it
-is only usable if the game falls through to its own table for omitted keys — the
-unrun step 3 of `probes/precedence/`. The public beta asset therefore uses whole
-tables and is game-plus-packs only; the full mod build stays private because it
-embeds the mods' English text.
+`build --sparse` emits only translated entries, with no English fallback. On
+2026-10-31 a two-entry base-game probe (`New Game`, `Options`) was run in game
+1.129.39.1030: the other main-menu labels went missing, with stray numbers and
+`wwww` where the game's own text should have appeared. **The game does not fall
+through.** Sparse builds are not shippable; every emitted table must be the
+complete English table with translations applied. A full build also embeds the
+mods' English text.
 
 ## Known limitations and open questions
 
 1. **The base-game override was run in game on 2026-10-16** (README Status); the
-   pack tables and the 101 mod-table overrides have not been observed. Nothing here
-   claims the mods render Estonian text yet.
+   pack table was observed on 2026-10-31 with EP01. The 101 mod-table overrides
+   have not been observed. Nothing here claims the mods render Estonian text yet.
 2. **First-named-package wins** was measured for game resources. Overriding another
-   mod's table, and overriding a `Delta/` table, are unverified (see above).
-3. **SDX files** are still not treated as a special case. Pack strings are read
-   from `Delta/`, but the game's own SDX precedence rules remain the brief's [R3]
-   open question.
+   mod's table is still unverified. Overriding a `Delta/` table is verified
+   (EP01, 2026-10-31).
+3. **SDX files** are read explicitly since 2026-10-31: `scan --prefer-delta`
+   takes each pack's strings from `Delta/<pack>`, labels them by the pack code and
+   records the root copy as shadowed. The game's SDX precedence rules remain the
+   brief's [R3] open question; Mods-vs-Delta was measured yes on 2026-10-31.
 4. **Runtime-substituted values stay in the game's base language** (names, money,
    dates, day names), because no new game language is registered. The clock's
    weekday text lives in a locale registry compiled into `TS4_x64.exe`, and the
@@ -610,10 +630,92 @@ embeds the mods' English text.
 5. **Memory is proportional to package size**, so the multi-gigabyte build
    packages are out of scope until the streaming plugin or an index-only reader is
    added.
-6. **Some strings stay English by design.** The base game keeps 2,503 entries
-   (names, identifiers, deferred syntax), the three owned packs 72, and the mods
-   499 (proper names, brand text, ambiguous keys). The validator refuses a
-   translation rather than guessing at a construct it cannot verify.
+6. **Some strings stay English by design.** On the first machine the base game
+   kept 2,503 entries (names, identifiers, deferred syntax), the three owned packs
+   72, and the mods 499 (proper names, brand text, ambiguous keys). On the
+   2026-10-31 machine the base game has 2,548 English entries (2,503 plus 45 added
+   by 1.129), and the new DLC/mod backlog is 106,806 + 16,010. The validator
+   refuses a translation rather than guessing at a construct it cannot verify.
 7. **Stale-source translations are excluded, not flagged in the UI.** They are
    reported in the build output and the manifest (`stale-source`), and the fix is
    to re-translate after re-extracting.
+
+## 2026-10-31 — the DLC machine: 116 Delta tables and 163,302 game strings
+
+A second machine with far more DLC was measured read-only before any translation
+work. Game 1.129.39.1030, Steam root, English. The pack content lives chiefly in
+`Delta/<pack>`; the root `<pack>` folders that exist are the original 2015-era
+copies. For EP01 the two copies share the same table instance but differ: 4,476
+entries in Delta against 4,485 in the root, 133 shared keys with different text.
+`Delta/SP06/Version.ini` records the current game version while the root copy
+records 2016, and `Delta/SP06/ResourceClient.cfg` gives the string files priority
+`-9` against `-30`; Delta is therefore the copy the game should load (the same
+conclusion the three stuff packs reached in the first session). Whether a Mods
+package then overrides that Delta resource is the open question.
+
+`scan --prefer-delta` was added for this layout: it reads `Delta/<pack>` string
+files, labels them by the pack code (so `SP06|…` stays `SP06|…`), and records the
+root copy as `shadowed-delta` instead of reading it. The full scan read **117
+tables and 163,302 strings**; 606 root files were shadowed, 1,768 non-English
+tables were skipped, and no package was written to.
+
+**Keys are globally stable in this corpus.** Across all 163,302 game occurrences,
+all 145,731 distinct English texts, no 32-bit string key maps to two different
+English texts. That is what makes one global Finnish reference map safe: a key in
+`Strings_FIN_FI.package` identifies the same text in whichever table it appears.
+
+**Finnish coverage is 98.7% of the DLC.** Of 100,363 English entries in the 102
+pack tables that ship a Finnish table, 99,041 differ from the English, 97 keys are
+missing and 1,225 are identical stubs. Fourteen packs have no Finnish table at
+all, including EP21 (3,837 translatable strings) and several recent kits; those
+are translated from English with the base game's vocabulary as precedent.
+
+**Existing work survives the move.** 56,491 of the 72,275 stored translations
+match the new sources by hash; 0 game occurrence IDs are orphaned. Five base-game
+source texts changed, so five translations are stale and must be re-done
+(`6DD0EECF`, `05C96583`, `FA90AD95`, `5FD0E55B`, `90519699`). The base table now
+has 58,419 entries (45 more than 1.128.90.1030); 2,548 are untranslated, of which
+2,386 have a Finnish reference.
+
+**The Mods folder has doubled.** 199 packages, 87 carrying text in 113 tables,
+31,578 occurrences (was 88 packages / 16,278 strings). 15,354 stored translations
+match, 0 are stale, and 8 are orphaned by a Basemental Real Drink Names table that
+changed its keys. A further **417 translations sit on labels the scan no longer
+produces** — chiefly `WW_mike24_DF` and `WW_mike24_DarkFantasies` (160 each), plus
+a dozen renamed Khyan/animations packages; the packages were renamed or replaced,
+so the occurrence IDs no longer resolve even though some content may survive under
+another label. They are not applied. 16,010 mod strings are untranslated, mostly
+in mods that are new to this machine (NisaK's Wicked Perversions 2,535, Devious
+Desires 2,468, Deviant Core 1,461, CinErotique 958).
+
+Backlog for the next wave: **106,806 game strings and 16,010 mod strings**. A
+cross-pack dedupe export of the game text produced 94,853 entries covering
+103,864 keys — 8.7% of the exported keys were filled from a translation of the
+same English text elsewhere in the batch set (10.8% across all game text) — with
+a Finnish reference on 93.2% of entries. Whether a Mods package overrides a
+`Delta` table at load time remains unverified;
+`probes/precedence/make-delta-probe.ts` generates the package that answers it.
+
+**Mods over Delta works.** An EP01-only whole-table package (4,329 Estonian,
+147 English fallback) was installed and rendered Estonian in game on 2026-10-31.
+The live `Delta/EP01` table is replaced by the Mods copy.
+
+**Fall-through was tested and failed.** The two-entry `base_sparse_probe.package`
+(New Game and Options only) was installed in the Mods folder and launched on
+2026-10-31. The two probe labels appeared, but the rest of the main menu was
+missing, with stray numbers and `wwww` where the game's own English should have
+been. The game does not fall through for omitted entries, so whole-table
+overrides are mandatory and `--sparse` cannot be used for a release. The 0.3.0
+beta asset (`Sims4_Eesti-game.package`, 1.74 MiB) is a whole-table build of four
+tables (base 58,374 + SP06 + SP08 + SP14, 56,496 translated, 2,575 English
+fallback); it predates the 1.129 base table's 58,419 entries.
+
+**0.4.0 shipped and verified through Vortex.** The release package is seven
+tables (base, SP06, SP08, SP14, EP01, EP02 partial, EP06) with 65,287 translated
+entries and 4,881 English fallback, built for 1.129.39.1030. It was installed
+locally and launched (Estonian main menu), and downloaded from the Nexus page and
+deployed with Vortex on a second PC, where it rendered after custom content and
+mods were enabled. Nexus page 7387; GitHub release v0.4.0-beta with asset
+`Sims4_Eesti_0.4.0-beta.zip` (sha256 `9156d6fa…5517`). The mod translations
+(15,047 applied entries, 53 tables, 35 version-locked packages) are built and
+parked for 0.5.0, not included in 0.4.0.

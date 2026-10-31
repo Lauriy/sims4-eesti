@@ -508,6 +508,450 @@
         "flirtimine"
       ],
       "note": "the owner's choice, 2026-10-17: Flirdi. The verb is flirtima and the action noun flirtimine (cf. Kiss -> Suudlemine) if the family style is wanted later. It was briefly 'Flirttaile', which is the Finnish word."
+    },
+    {
+      "en": "vampire",
+      "et": "vampiir",
+      "note": "occult species; genitive vampiiri, plural vampiirid. Base game already has Add Vampire = Lisa vampiir."
+    },
+    {
+      "en": "vampire lore",
+      "et": "vampiiripärimused",
+      "note": "the Vampire Lore skill; base game already uses Vampiiripärimused."
+    },
+    {
+      "en": "spellcaster",
+      "et": "loitsija",
+      "note": "gender-neutral magic user; not nõid (witch) or võlur (wizard). Base game: Add Spellcaster = Lisa loitsija."
+    },
+    {
+      "en": "mermaid",
+      "et": "merineitsi",
+      "note": "occult species; base game: Add Mermaid = Lisa merineitsi. Avoid näkk (a folklore water spirit)."
+    },
+    {
+      "en": "werewolf",
+      "et": "libahunt",
+      "note": "occult species; base game: Add Werewolf = Lisa libahunt. Not ihmissusi (Finnish)."
+    },
+    {
+      "en": "alien",
+      "et": "tulnukas",
+      "note": "occult species; the exact base label Alien = Tulnukas, but Add Alien = Lisa avaruusolio and one more string uses avaruusolio. Standardise on tulnukas; Finnish uses avaruusolio.",
+      "ambiguous": true,
+      "accept": [
+        "avaruusolio"
+      ]
+    },
+    {
+      "en": "familiar",
+      "et": "kaasolend",
+      "note": "a spellcaster's summoned helper creature; Finnish apuolento. No base Estonian rendering; kaasolend chosen over abiolend/abivaim.",
+      "accept": [
+        "abiolend",
+        "abivaim"
+      ]
+    },
+    {
+      "en": "curse",
+      "et": "needus",
+      "note": "magical curse; base game Curse = Needus, verb needma. Kirous is a rarer synonym.",
+      "ambiguous": true
+    },
+    {
+      "en": "plasma",
+      "et": "plasma",
+      "note": "vampire food (blood substitute); base prose keeps plasma (Plasma Fruit = plasmafruit), Finnish hurme. Use vereplasma if a bare label would repeat the English word."
+    },
+    {
+      "en": "occult",
+      "et": "üleloomulik",
+      "note": "occult/supernatural being or category; base game renders both Occult and Supernatural as Üleloomulik. Avoid okultne."
+    },
+    {
+      "en": "spell",
+      "et": "loits",
+      "note": "a magic spell; base game (From Chillio Spell) = (Loitsu „Külmio“ tõttu). Verb loitsima.",
+      "ambiguous": true
+    },
+    {
+      "en": "magic",
+      "et": "maagia",
+      "note": "magic as a force or skill; base game Untamed Magic = Taltsutamatu maagia. Võlu is charm, not the system.",
+      "ambiguous": true
+    },
+    {
+      "en": "potion",
+      "et": "nõiajook",
+      "note": "brewed magic potion; base game Potion = Nõiajook, but compounds and the plural often use eliksiir (Terviseeliksiir, Eliksiirid).",
+      "ambiguous": true,
+      "accept": [
+        "eliksiir"
+      ]
+    },
+    {
+      "en": "cat",
+      "et": "kass",
+      "note": "animal; base game Cat = Kass; breeds use kass (Manksi kass).",
+      "ambiguous": true
+    },
+    {
+      "en": "kitten",
+      "et": "kassipoeg",
+      "note": "young cat; base game Trapped Kitten = Lõksus kassipoeg. Kiisupoeg is an affectionate synonym.",
+      "ambiguous": true
+    },
+    {
+      "en": "dog",
+      "et": "koer",
+      "note": "animal; base game Dog = Koer.",
+      "ambiguous": true
+    },
+    {
+      "en": "puppy",
+      "et": "kutsikas",
+      "note": "young dog; base game Puppy = Kutsikas.",
+      "ambiguous": true
+    },
+    {
+      "en": "horse",
+      "et": "hobune",
+      "note": "animal; base game Horse = Hobune.",
+      "ambiguous": true
+    },
+    {
+      "en": "foal",
+      "et": "varss",
+      "note": "young horse; base game Foal = Varss; Colt = Täkuvarss, Filly = Märruvarss.",
+      "ambiguous": true
+    },
+    {
+      "en": "ranch",
+      "et": "rantšo",
+      "note": "horse ranch as a place; base game already uses rantšo (Loo rantšos elu), Finnish tila. Talu is a generic farm.",
+      "ambiguous": true
+    },
+    {
+      "en": "chicken",
+      "et": "kana",
+      "note": "animal; base game Chicken = Kana; coop = kanakuppel/kanala.",
+      "ambiguous": true
+    },
+    {
+      "en": "cow",
+      "et": "lehm",
+      "note": "animal; base game Cow = Lehm.",
+      "ambiguous": true
+    },
+    {
+      "en": "llama",
+      "et": "laama",
+      "note": "animal; base game Llama = Laama.",
+      "ambiguous": true
+    },
+    {
+      "en": "fox",
+      "et": "rebane",
+      "note": "animal; base game Fox = Rebane; wild fox = metsrebane.",
+      "ambiguous": true
+    },
+    {
+      "en": "rabbit",
+      "et": "jänes",
+      "note": "animal; base game Rabbits = Jänesed; bunny is also jänes in game text.",
+      "ambiguous": true
+    },
+    {
+      "en": "goat",
+      "et": "kits",
+      "note": "animal; EP14's goat is the Mini Goat; the base game bullet Mini Goats = Kääbuskitsed.",
+      "ambiguous": true
+    },
+    {
+      "en": "sheep",
+      "et": "lammas",
+      "note": "animal; EP14's sheep is the Mini Sheep; the base game bullet Mini Sheep = Kääbuslambad.",
+      "ambiguous": true
+    },
+    {
+      "en": "mini goat",
+      "et": "kääbuskits",
+      "note": "Horse Ranch small goat; the base game bullet uses Kääbuskitsed, while marketing and debug text also use minikits. Standardise on kääbuskits."
+    },
+    {
+      "en": "mini sheep",
+      "et": "kääbuslammas",
+      "note": "Horse Ranch small sheep; the base game bullet uses Kääbuslambad, while marketing and debug text also use minilammas. Standardise on kääbuslammas."
+    },
+    {
+      "en": "nectar",
+      "et": "nektar",
+      "note": "fruit drink; base game Nectar = Nektar; compounds take nektari- (Nektaririiul), making = nektari valmistamine."
+    },
+    {
+      "en": "garden",
+      "et": "aed",
+      "note": "garden as a place; base game Garden = Aed; the gardening skill is aiandus.",
+      "ambiguous": true
+    },
+    {
+      "en": "pet",
+      "et": "lemmikloom",
+      "note": "companion animal; base game Pet = Lemmikloom, Pets = Lemmikloomad/Lemmikud.",
+      "ambiguous": true
+    },
+    {
+      "en": "veterinarian",
+      "et": "loomaarst",
+      "note": "vet and the vet career/clinic; base game Veterinarian = Loomaarst, Vet Clinic = Loomaarstikliinik."
+    },
+    {
+      "en": "high school",
+      "et": "keskkool",
+      "note": "secondary school; base game High School = Keskkool; high school student = keskkooliõpilane."
+    },
+    {
+      "en": "student",
+      "et": "õpilane",
+      "note": "at school; at university use üliõpilane/tudeng. Base game High School Student = Keskkooliõpilane.",
+      "ambiguous": true,
+      "accept": [
+        "üliõpilane",
+        "tudeng"
+      ]
+    },
+    {
+      "en": "prom",
+      "et": "kooliball",
+      "note": "High School Years formal dance; base game translates Prom as kooliball throughout. Not lõpupidu (graduation party)."
+    },
+    {
+      "en": "graduation",
+      "et": "lõpetamine",
+      "note": "finishing school or university; base game Graduation Tomorrow! = Lõpetamine homme! The ceremony is lõpuaktus.",
+      "accept": [
+        "lõpuaktus"
+      ]
+    },
+    {
+      "en": "university",
+      "et": "ülikool",
+      "note": "institution; base game Go to University = Mine ülikooli."
+    },
+    {
+      "en": "degree",
+      "et": "kraad",
+      "note": "academic degree; base game Degrees = Kraadid, University Degree = Ülikoolikraad. Kraad also means angle/temperature degree.",
+      "ambiguous": true
+    },
+    {
+      "en": "dorm",
+      "et": "ühiselamu",
+      "note": "student residence; base game University Housing = Ülikooli ühiselamu, Dorm Life Panel = Ühikuelu paneel. Ühikas is colloquial.",
+      "accept": [
+        "ühikas"
+      ]
+    },
+    {
+      "en": "major",
+      "et": "eriala",
+      "note": "university field of study; base game majoring in = õpib erialal. Not the adjective major (suur/tähtis); the game UI mostly says Degree.",
+      "ambiguous": true,
+      "accept": [
+        "eriala"
+      ]
+    },
+    {
+      "en": "infant",
+      "et": "imik",
+      "note": "life stage; base game Infant = Imik; baby = beebi.",
+      "ambiguous": true
+    },
+    {
+      "en": "baby",
+      "et": "beebi",
+      "note": "life stage; base game Baby = Beebi. Vastsündinu is official but not used in game text.",
+      "ambiguous": true
+    },
+    {
+      "en": "child",
+      "et": "laps",
+      "note": "life stage and offspring; base game Child = Laps; male child = poisslaps.",
+      "ambiguous": true
+    },
+    {
+      "en": "young adult",
+      "et": "noor täiskasvanu",
+      "note": "life stage; base game Young Adult = Noor täiskasvanu."
+    },
+    {
+      "en": "adult",
+      "et": "täiskasvanu",
+      "note": "life stage; base game Adults = Täiskasvanud.",
+      "ambiguous": true
+    },
+    {
+      "en": "family dynamics",
+      "et": "peredünaamika",
+      "note": "Growing Together feature; base game Family Dynamic = Peredünaamika."
+    },
+    {
+      "en": "milestone",
+      "et": "verstapost",
+      "note": "life milestone; base game Milestone Type = Verstaposti tüüp; Finnish merkkipaalu."
+    },
+    {
+      "en": "rental",
+      "et": "üürikinnisvara",
+      "note": "Residential Rental lot/property; base game Sell Residential Rental = Müü üürikinnisvara. A unit is üürikorter, a lot üürikrunt.",
+      "ambiguous": true,
+      "accept": [
+        "üürikorter",
+        "üürikrunt"
+      ]
+    },
+    {
+      "en": "landlord",
+      "et": "üürileandja",
+      "note": "owner who rents out; base game The Landlord = Üürileandja."
+    },
+    {
+      "en": "tenant",
+      "et": "üürnik",
+      "note": "renter; base game Tenants = Üürnikud."
+    },
+    {
+      "en": "apartment",
+      "et": "korter",
+      "note": "dwelling; base game Apartment = Korter; Unit Rules = Korterireeglid.",
+      "ambiguous": true
+    },
+    {
+      "en": "roommate",
+      "et": "toakaaslane",
+      "note": "person sharing a home; base game Roommate = Toakaaslane."
+    },
+    {
+      "en": "rent",
+      "et": "üür",
+      "note": "money paid for housing; base game Rent = Üür. Verb üürima; rent out = välja üürima.",
+      "ambiguous": true
+    },
+    {
+      "en": "eviction",
+      "et": "väljatõstmine",
+      "note": "legal removal of a tenant; base game prose uses väljatõstmine. Häätamine is colloquial."
+    },
+    {
+      "en": "season",
+      "et": "aastaaeg",
+      "note": "one of the four seasons; base game All Seasons = Kõik aastaajad. Hooaeg is a growing or other recurring season.",
+      "ambiguous": true,
+      "accept": [
+        "hooaeg"
+      ]
+    },
+    {
+      "en": "snow",
+      "et": "lumi",
+      "note": "weather; base game Snow = Lumi.",
+      "ambiguous": true
+    },
+    {
+      "en": "rain",
+      "et": "vihm",
+      "note": "weather; base game Light Rain = Nõrk vihm.",
+      "ambiguous": true
+    },
+    {
+      "en": "storm",
+      "et": "torm",
+      "note": "weather; base game Snow Storm = Lumetorm. Myrsky is Finnish.",
+      "ambiguous": true
+    },
+    {
+      "en": "onsen",
+      "et": "onsen",
+      "note": "Japanese hot-spring bath venue; base game Onsen Venue = Onseni koht, Onsen Bathhouse = Onseni saun. Inflects onseni."
+    },
+    {
+      "en": "ski",
+      "et": "suusk",
+      "note": "the object (plural suusad); the activity/skill is suusatamine (base +Skiing Skill = +Suusatamisoskus).",
+      "accept": [
+        "suusatamine",
+        "suusad"
+      ]
+    },
+    {
+      "en": "snowboard",
+      "et": "lumelaud",
+      "note": "the board; the activity is lumelauasõit (base I Love Snowboarding = Armastan lumelauasõitu).",
+      "accept": [
+        "lumelauasõit"
+      ]
+    },
+    {
+      "en": "weather",
+      "et": "ilm",
+      "note": "weather; base game Weather = Ilm. Sää is not standard Estonian.",
+      "ambiguous": true
+    },
+    {
+      "en": "holiday",
+      "et": "püha",
+      "note": "calendar holiday; base game Holiday = Püha, Holidays = Pühad. Vacation is puhkus (glossary).",
+      "ambiguous": true
+    },
+    {
+      "en": "festival",
+      "et": "festivalisündmus",
+      "note": "singular event label; base game Festival = Festivalisündmus, plural Festivals = Festivalid. Compounds and names use -festival (Suvefestival, Sulani festival).",
+      "ambiguous": true
+    },
+    {
+      "en": "moodlet",
+      "et": "tujumõjutaja",
+      "note": "temporary emotional effect; base game Moodlets = Tujumõjutajad. Prose may shorten to tuju."
+    },
+    {
+      "en": "buff",
+      "et": "mõju",
+      "note": "system-side mood effect; the player-facing moodlet is tujumõjutaja. Base game Debug Buffs = Silumismõjutused.",
+      "ambiguous": true,
+      "accept": [
+        "tujumõjutaja",
+        "mõjutused"
+      ]
+    },
+    {
+      "en": "lot trait",
+      "et": "krundi iseloomujoon",
+      "note": "a lot's trait; base game Lot Trait = Krundi iseloomujoon. Keep lot = krunt and trait = iseloomujoon."
+    },
+    {
+      "en": "club",
+      "et": "klubi",
+      "note": "Get Together club; base game Clubs = Klubid.",
+      "ambiguous": true
+    },
+    {
+      "en": "tradition",
+      "et": "traditsioon",
+      "note": "holiday tradition; base game Tradition = Traditsioon.",
+      "ambiguous": true
+    },
+    {
+      "en": "errand",
+      "et": "ülesanne",
+      "note": "Cottage Living small task; Finnish tehtävä. Toimetus is a false friend (editorial office).",
+      "ambiguous": true
+    },
+    {
+      "en": "competition",
+      "et": "võistlus",
+      "note": "contest; base game Horse Competition = Hobuste võistlus. Konkurents is rivalry.",
+      "ambiguous": true
     }
   ],
   "style": [

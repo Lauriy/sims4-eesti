@@ -37,6 +37,7 @@ export type Disposition =
   | "read"
   | "skipped-large"
   | "excluded-delta"
+  | "shadowed-delta"
   | "no-string-tables"
   | "no-english-tables"
   | "own-output"
@@ -79,6 +80,14 @@ export interface ScanOptions {
   largeFileBytes?: number;
   /** Read `Delta` (SDX) files too. Off by default: precedence is unsettled. */
   includeDelta?: boolean;
+  /**
+   * Read each pack's strings from `Delta/<pack>` (the updated SDX copy) and label
+   * them by the pack code, instead of reading the pack's root folder. The root
+   * copy is then recorded as `shadowed-delta` and skipped. Only Delta files named
+   * like string files are read: measured on a full installation, the other Delta
+   * packages hold no string tables.
+   */
+  preferDelta?: boolean;
   /**
    * Read non-English tables too. Off by default, and deliberately: a mod ships
    * the same text once per locale (WickedWhims: 6,354 strings in each of 22
@@ -130,7 +139,12 @@ export function findPackages(gameRoot: string): string[] {
  * derived only from the path: `BASE` for the base game's strings, the pack folder
  * name for a pack, otherwise the file stem.
  */
-export function labelFor(gameRoot: string, filePath: string, allFiles: string[]): string {
+export function labelFor(
+  gameRoot: string,
+  filePath: string,
+  allFiles: string[],
+  preferDelta = false
+): string {
   const rel = relative(gameRoot, filePath).split(sep).join("/");
   const parts = rel.split("/");
   const fileStem = sanitiseLabel(basename(filePath).replace(/\.package$/i, ""));
@@ -138,6 +152,10 @@ export function labelFor(gameRoot: string, filePath: string, allFiles: string[])
   // The base game's own strings file is always BASE, whatever else lives beside it.
   if (parts.length === 3 && parts[0] === "Data" && parts[1] === "Client" && STRINGS_NAME.test(basename(filePath))) {
     return "BASE";
+  }
+  if (preferDelta) {
+    const deltaPack = deltaPackOf(gameRoot, filePath);
+    if (deltaPack) return deltaPack;
   }
   if (parts.length === 2 && STRINGS_NAME.test(basename(filePath))) {
     return sanitiseLabel(parts[0]!);
@@ -165,6 +183,20 @@ export function isDeltaPath(gameRoot: string, filePath: string): boolean {
   return rel.startsWith("Delta/");
 }
 
+/** Pack code of a `Delta/<pack>/…` file, or undefined for any other path. */
+export function deltaPackOf(gameRoot: string, filePath: string): string | undefined {
+  const parts = relative(gameRoot, filePath).split(sep).join("/").split("/");
+  if (parts.length < 3 || parts[0] !== "Delta") return undefined;
+  return sanitiseLabel(parts[1]!);
+}
+
+/** Pack code of a `<pack>/Strings_…` root file, or undefined. */
+function rootPackOf(gameRoot: string, filePath: string): string | undefined {
+  const parts = relative(gameRoot, filePath).split(sep).join("/").split("/");
+  if (parts.length !== 2 || !STRINGS_NAME.test(parts[1]!)) return undefined;
+  return sanitiseLabel(parts[0]!);
+}
+
 export function scanInstallation(options: ScanOptions): ScanResult {
   const gameRoot = resolve(options.gameRoot);
   if (!existsSync(gameRoot)) {
@@ -179,6 +211,7 @@ export function scanInstallation(options: ScanOptions): ScanResult {
   const looksLikeGameInstall = existsSync(join(gameRoot, "Data", "Client"));
   const largeFileBytes =
     options.largeFileBytes ?? (looksLikeGameInstall ? DEFAULT_LARGE_FILE_BYTES : 0);
+  const preferDelta = options.preferDelta === true;
   const progress = options.onProgress ?? (() => {});
   const generatedAt = new Date().toISOString();
 
@@ -217,7 +250,7 @@ export function scanInstallation(options: ScanOptions): ScanResult {
     const record = (disposition: Disposition, note?: string): void => {
       packages.push({
         path: rel,
-        label: labelFor(gameRoot, filePath, files),
+        label: labelFor(gameRoot, filePath, files, preferDelta),
         sizeBytes,
         sha256: null,
         disposition,
@@ -234,11 +267,32 @@ export function scanInstallation(options: ScanOptions): ScanResult {
       record("own-output", "this is the output of this tool, not a translation source");
       continue;
     }
-    if (isDeltaPath(gameRoot, filePath) && !options.includeDelta) {
+    const looksLikeStrings = STRINGS_NAME.test(basename(filePath));
+    if (preferDelta) {
+      const deltaPack = deltaPackOf(gameRoot, filePath);
+      if (deltaPack) {
+        if (!looksLikeStrings) {
+          record(
+            "excluded-delta",
+            "in --prefer-delta mode only Delta files named like string files are read; " +
+              "measured: other Delta packages hold no string tables"
+          );
+          continue;
+        }
+      } else {
+        const rootPack = rootPackOf(gameRoot, filePath);
+        if (rootPack && existsSync(join(gameRoot, "Delta", rootPack, basename(filePath)))) {
+          record(
+            "shadowed-delta",
+            `the current copy is Delta/${rootPack}/${basename(filePath)}; read from there (--prefer-delta)`
+          );
+          continue;
+        }
+      }
+    } else if (isDeltaPath(gameRoot, filePath) && !options.includeDelta) {
       record("excluded-delta", "Delta (SDX) content: precedence is not established, so it is not read");
       continue;
     }
-    const looksLikeStrings = STRINGS_NAME.test(basename(filePath));
     if (largeFileBytes > 0 && sizeBytes >= largeFileBytes && !looksLikeStrings) {
       record(
         "skipped-large",
@@ -287,7 +341,7 @@ export function scanInstallation(options: ScanOptions): ScanResult {
   candidates.sort((a, b) => (a.rel < b.rel ? -1 : a.rel > b.rel ? 1 : 0));
   for (const candidate of candidates) {
     const { filePath, rel, sizeBytes, read, tables, rawByTgi, skippedNonEnglish } = candidate;
-    let label = labelFor(gameRoot, filePath, files);
+    let label = labelFor(gameRoot, filePath, files, preferDelta);
     let uniqueLabel = label;
     let suffix = 2;
     while (seenLabels.has(uniqueLabel)) uniqueLabel = `${label}_${suffix++}`;
@@ -406,8 +460,13 @@ export function scanInstallation(options: ScanOptions): ScanResult {
       "Every string table found is listed here with the package it came from.",
       `Large packages that are not named like string files were skipped; none of them held a table in ` +
         `the measurement recorded in IMPLEMENTATION_NOTES.md (${byDisposition["skipped-large"] ?? 0} skipped).`,
-      `Delta (SDX) files are reported but not read until resource precedence is established ` +
-        `(${byDisposition["excluded-delta"] ?? 0} excluded).`,
+      preferDelta
+        ? `Pack strings were read from Delta/<pack> where a copy exists and labelled by the pack ` +
+          `code; the root-folder copy is recorded as shadowed-delta ` +
+          `(${byDisposition["shadowed-delta"] ?? 0} shadowed, ${byDisposition["excluded-delta"] ?? 0} ` +
+          `other Delta files excluded).`
+        : `Delta (SDX) files are reported but not read until resource precedence is established ` +
+          `(${byDisposition["excluded-delta"] ?? 0} excluded).`,
       `Packages holding no English table are listed but contribute nothing (${noEnglishOnly}).`,
       `Tables in languages other than English are not read (${nonEnglishSkipped} skipped): a mod ` +
         `repeats the same text once per locale, and only the English ones matter to a game running ` +

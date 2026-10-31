@@ -1,5 +1,11 @@
 # How the bulk run is sequenced, and why
 
+**Updated 2026-10-31:** a second machine (game 1.129.39.1030) carries 116 DLC pack
+tables. Measured backlog: **106,806 game strings and 16,010 mod strings**. A
+cross-pack export produced 238 batches / 94,853 entries covering 103,864 keys,
+with EA's Finnish as a reference on 93.2% of them. Waves 1–3 below remain the
+record of the first machine; **Wave 5** is the DLC run.
+
 **Updated 2026-10-19:** waves 1–3 are complete. 72,275 of 75,349 strings are
 translated and deployed; 71,806 were applied to the built package (469 belong to
 mod packages shadowed by a first-named copy of the same table ID). The remaining
@@ -94,3 +100,45 @@ Finally, the review loop: every string is `machine` today, and `reviewedApplied`
 is 0. A human reading the game and marking what is wrong with `set --state
 reviewed` is the only path to a reviewed translation, and it is the only claim
 this project has never made.
+
+## Wave 5 — the DLC machine (2026-10-31)
+
+The catalog is 163,302 game strings in 117 tables plus 31,578 mod strings. Of the
+72,275 stored translations, **71,845 still match** their source (56,491 game,
+15,354 mods); five base-game texts changed; 425 IDs no longer resolve (8 changed
+mod keys, 417 old mod package labels). The wave is ordered by what can be checked
+soonest, not by string count:
+
+1. **Precondition, one game launch.** Install `work/probes/delta_probe.package`
+   alone and confirm the Romantic Garden fountain reads `DELTA-PROBE-LOADED`.
+   That answers whether a Mods package overrides a `Delta` table. If it does not,
+   stop: the build strategy must change before bulk translation.
+2. **EP01 pilot, 11 batches.** Translate, import, build, and check in game. This
+   is the first pack whose text was never in the first machine's beta.
+3. **The other expansion packs, largest first**, then game packs, then the many
+   tiny stuff packs and kits. Every pack has its own Finnish table except EP21 and
+   13 recent kits; those are translated from English with base-game precedents.
+4. **The new mods last** (16,010 strings), as before: they inherit the game's
+   vocabulary, and the three updated big mods have 211 new strings among them.
+5. **Consistency, then review.** `glossary-check`, `lint`, and the same-English /
+   different-Estonian report; fix the five stale base strings; then the human
+   review loop, which remains the only path to `reviewed`.
+
+Cost control: one 400-string batch per translator, deduped across packs, Finnish
+reference capped at one language (it is the only one most packs have), and no
+re-translation of the 56,491 strings that already match.
+
+## Release 0.5.0 — include everything
+
+The 0.4.0 public release (2026-10-31) is deliberately game-only: base game, SP06,
+SP08, SP14, EP01, EP06, and partial EP02. The owner's requirement for the next
+release is to include **all completed work**, including the mod translations:
+15,047 applied entries across 53 tables in 35 mod packages, built from
+`work/mods/catalog.json` and version-locked by `MODS.txt` (filename + sha256 per
+package). New mods added on the 2026-10-31 machine (Devious Desires, NisaK,
+CinErotique, etc.) are still untranslated and are not part of that 15,047.
+
+Whole-table mod overrides are version-coupled: if a user's mod differs from the
+listed hash, strings added by the update will be missing. Ship the mod tables as a
+separate optional file (or clearly version-locked), never silently merged into the
+universal game package. Add any DLC packs completed by then to the game package.

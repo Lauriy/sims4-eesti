@@ -2,7 +2,7 @@
 
 ## Assignment and first stopping point
 
-Implement a small Windows-first command-line project that builds an unofficial Estonian text-translation mod for The Sims 4 from a user's local English game files.
+Implement a small Windows-first command-line project that builds a fan-made Estonian text-translation mod for The Sims 4 from a user's local English game files.
 
 **Implement Phase 1 now. Do not implement the later roadmap yet.** The first deliverable is a working extraction → translation → validation → package-build loop, with roughly 10–20 visible strings changed and a documented in-game test. It is not a translation website, installer, or full-game machine translation.
 
@@ -142,7 +142,7 @@ dist/                         # ignored: generated packages
 
 Use ordinary functions and data structures. Do not introduce plugin frameworks, a database, a web server, or an elaborate dependency-injection architecture. Adjust this layout when it makes the implementation simpler; it is not a reason to create empty files.
 
-Commit only synthetic fixtures, not extracted EA packages or the complete game script. Keep `.env`, absolute local paths, and secrets out of Git. Keep the local prototype artifact private pending a distribution review.
+Commit only synthetic fixtures, not extracted EA packages or the complete game script. Keep `.env`, absolute local paths, and secrets out of Git.
 
 ### 8. Automated acceptance tests
 
@@ -195,9 +195,8 @@ Use an existing Weblate deployment, not a homegrown translator UI. Weblate suppo
 
 Add suggestions, trusted reviewers, glossary ownership, source-change invalidation, and validation before release. Keep glossary checks sensitive to legitimate Estonian inflection; do not require every word to appear in dictionary form.
 
-Human translators need source text/context. Keeping the Git repository free of EA source text does **not** automatically solve the question of exposing that text in a public translation platform. Similarly, Phase 1's full-table prototype includes retained English text. Review source-text access, distribution permissions, and host requirements before public release; “translation patch” is not a blanket legal exemption.
-
-EA's policy requires noncommercial/free mod distribution subject to its stated exceptions and prohibits suggesting EA/Maxis endorsement. It does not pre-approve this project or guarantee a host will accept it. Do not use EA logos or assume a mod policy grants unrestricted rights to publish the extracted game script. [R8]
+Human translators need source text/context. Keeping the Git repository free of
+EA source text is separate from what a public translation platform displays.
 
 Only after compatibility and publication requirements are settled, produce a user-facing package release with scope, game version, review coverage, installation/removal instructions, and checksums. No automatic uploading or accounts are part of the first implementation.
 
@@ -230,7 +229,4 @@ https://raw.githubusercontent.com/Llama-Logic/Binary-Templates/main/StringTable_
 
 [R7] Weblate JSON-format documentation:
 https://docs.weblate.org/en/latest/formats/json.html
-
-[R8] EA's Sims 4 mod policy:
-https://help.ea.com/en/articles/the-sims/the-sims-4/mods-policy/
 ```

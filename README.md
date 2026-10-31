@@ -1,23 +1,24 @@
 # Sims 4 Eesti
 
-An unofficial, noncommercial **prototype** that builds an Estonian text mod for
-The Sims 4 out of the English string files already on your own PC.
+A fan-made **prototype** that builds an Estonian text mod for The Sims 4 out of
+the English string files already on your own PC.
 
 It is a local command-line tool, not a translation website and not an installer:
 you point it at one English `.package`, pick strings, write Estonian text, and it
 writes one `.package` you can drop into your Mods folder.
 
-**Scope of this prototype:** an install-wide catalog (75,349 English strings: the
-base game's 58,374, the three owned stuff packs, and 88 mod packages) and **72,275
-translated entries across 105 string tables** — the base game, Romantic Garden
-Stuff (SP06), Backyard Stuff (SP08), My First Pet Stuff (SP14), and the English
-string tables of the installed mods (WickedWhims, Basemental Drugs, MC Command
-Center, and the rest). Untranslated entries keep their English text. This is not
-a complete Estonian localisation of the game, and no translation here has been
-reviewed by a human.
-
-**Nothing here is approved, endorsed, or supported by EA or Maxis.** See
-[Legal and distribution](#legal-and-distribution) before sharing anything.
+**Scope of this prototype:** an install-wide catalog (on the 2026-10-31 machine,
+**194,880 English strings across 230 tables**: the base game's 58,419, 116 DLC
+pack tables read from the live `Delta/<pack>` copies, and 87 mod packages) and
+**72,275 stored translations across 105 string tables (71,845 still matching
+their English source)** — all from the first machine's run: the base game,
+Romantic Garden Stuff (SP06), Backyard Stuff (SP08),
+My First Pet Stuff (SP14), and the English string tables of the installed mods
+(WickedWhims, Basemental Drugs, MC Command Center, and the rest). A DLC wave
+started 2026-10-31 is translating the remaining 106,806 game and 16,010 mod
+strings; until it lands, that text stays English. Untranslated entries keep their
+English text. This is not a complete Estonian localisation of the game, and no
+translation here has been reviewed by a human.
 
 ---
 
@@ -47,14 +48,14 @@ in English and reported, never half-translated.
 
 | Thing | Tested with |
 | --- | --- |
-| Windows | Windows 11 Pro (26100) |
-| Node.js | v22.18.0 (LTS) |
-| npm | 11.6.4 |
+| Windows | Windows 11 Pro (26300) |
+| Node.js | v22.22.0 (LTS) |
+| npm | 10.9.4 |
 | TypeScript | 7.0.2 (`tsc --noEmit`, strict) |
 | `@s4tk/models` | 0.6.14 (pinned) |
 | `@s4tk/compression` | 0.2.0 (pinned) |
 | tsx | 4.23.15 (runs the TypeScript CLI directly) |
-| Game | The Sims 4 **1.128.90.1030**, Steam install, English (`en_US`) |
+| Game | The Sims 4 **1.129.39.1030**, Steam install, English (`en_US`). The in-game results in [Status](#status) were observed on 1.128.90.1030; the newer version has been measured read-only, not played with the mod. |
 
 There is no build step: `npm run cli` runs the TypeScript directly through tsx.
 
@@ -62,7 +63,7 @@ There is no build step: `npm run cli` runs the TypeScript directly through tsx.
 
 ```powershell
 npm ci
-npm test          # 109 tests, all synthetic; no game files needed
+npm test          # 110 tests, all synthetic; no game files needed
 ```
 
 ## Use
@@ -84,7 +85,7 @@ npm run cli -- search --catalog work/base/catalog.json --text "Mode" --translata
 npm run cli -- set --catalog work/base/catalog.json --id "BASE|220557DA:00000000:0054935F2685AD48|0DFED87C" --text "Uus mäng"
 
 # 4. Build the mod (--include-unreviewed applies drafts/machine text; reviewed text needs no flag)
-npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/!Sims4_Eesti.package --game-version "1.128.90.1030"
+npm run cli -- build --catalog work/base/catalog.json --include-unreviewed --out dist/!Sims4_Eesti.package --game-version "1.129.39.1030"
 
 # 5. Install: always dry-run first (see the manual test plan below)
 npm run cli -- deploy --file dist/!Sims4_Eesti.package --mods-dir "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods" --dry-run
@@ -103,27 +104,18 @@ start or stop the game. Replacing an earlier build of this mod first copies the
 old file to `work/backups/` (outside Mods).
 
 To remove the mod again: delete `!Sims4_Eesti.package` from the Mods folder.
-Nothing else was changed. (This removal was tested in game — see
-[Status](#status-and-what-is-unverified).)
+Nothing else was changed. (This removal was tested in game — see [Status](#status).)
 
 **If you play the game in another language.** A string table's instance starts
 with a locale byte (`00` English, `06` Finnish, and so on), and the game loads
-the table for the language it is running in. A mod tagged only English is
+the table for the language it is running in; a mod tagged only English is
 therefore ignored under a Finnish game. `build --locales en,fi` writes one
-identical copy per language, each tagged for that language, so the Estonian text
-appears whichever of them the game runs in. This is the same mechanism the
-Ukrainian translation project retags by hand in Sims 4 Studio. It is verified at
-the package level (tests re-read every copy) but not yet observed in game under a
-non-English language. One thing no package can change: the clock's weekday names
-are compiled into `TS4_x64.exe`, and the game ships no Estonian entry for them,
-so they follow the base language (English "Mon." or Finnish "Ma") either way.
-Changing the time format itself (12-hour to 24-hour) is a UI override, not a
-string-table change; this project does not ship one. A known third-party option
-is Crinlorite's *Clock – 24 hours* on CurseForge: it forces the main HUD clock to
-24-hour and keeps the weekday in the game's language. It is All Rights Reserved,
-is not bundled here, has not been tested against this installation, and by its
-own description does not convert calendar, career, university or notification
-times.
+identical copy per language, each tagged for that language. It is verified at the
+package level (tests re-read every copy) but not yet observed in game under a
+non-English language. The clock's weekday names are compiled into `TS4_x64.exe`
+and the game ships no Estonian entry, so they follow the base language (English
+"Mon." or Finnish "Ma"); changing the time format is a UI override this project
+does not ship.
 
 ### Translating the whole game, not one table
 
@@ -133,14 +125,19 @@ whatever engine you point at them, and checks the result against an agreed
 vocabulary.
 
 ```powershell
-# 1. Catalog the whole installation: base game, packs, and your mods.
-#    Skips the game's own Delta patches and this tool's previous output.
-npm run cli -- scan --root "C:\Program Files (x86)\Steam\steamapps\common\The Sims 4" --mods "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods" --out work/beta-catalog.json
+# 1. Catalog the game installation from each pack's live Delta copy.
+#    --prefer-delta labels those tables by pack code (EP01, SP06, ...) and
+#    records the stale root-folder copy as shadowed-delta instead of reading it.
+npm run cli -- scan --game-root "C:\Program Files (x86)\Steam\steamapps\common\The Sims 4" --prefer-delta --out work/game
+
+# 1b. The Mods folder is a separate root; scan it on its own, then merge.
+npm run cli -- scan --game-root "C:\Users\<you>\Documents\Electronic Arts\The Sims 4\Mods" --out work/mods
+npm run cli -- merge --catalogs work/game/catalog.json,work/mods/catalog.json --out work/beta-catalog.json
 
 # 2. Export translation batches (JSON), with per-string context: what kind of
 #    string it is, its neighbours in the game's own file, its placeholders, and
 #    reference translations from the same package's other locales where they exist.
-npm run cli -- translate-export --catalog work/beta-catalog.json --out work/batches --batch-size 400 --references work/finnish
+npm run cli -- translate-export --catalog work/beta-catalog.json --out work/batches --batch-size 400 --references work/reference-fi
 
 # 3. Translate the batches (any engine, any translator - the file format is the interface),
 #    then import. Import validates every entry and rejects with a reason.
@@ -155,8 +152,8 @@ Two things this design refuses to do: it never treats its own output as a source
 (the scan skips `!Sims4_Eesti.package`, so Estonian text can never come back as
 "untranslated English"), and it never rewrites a translation to satisfy the
 glossary. `glossary-check` reports; a human decides. Terminology consistency is
-handled where it actually lives — the ~50 concept words in `glossary.json`, not
-the 67,000 strings — and `glossary.json` records the senses, alternatives and
+handled where it actually lives — the concept words in `glossary.json`, not the
+190,000 strings — and `glossary.json` records the senses, alternatives and
 ambiguities learned by triaging what the checker reports.
 
 ### Options that matter
@@ -170,7 +167,10 @@ ambiguities learned by triaging what the checker reports.
 | `--force-replace-unknown` (deploy) | Replace a same-named file the tool does not recognise as its own — after backing it up. |
 | `--game-version` (build) | Record the game version in the manifest. Without it the manifest says "not recorded" rather than inventing one. |
 | `--locales` (build) | Base-game languages to carry the translated table for, e.g. `--locales en,fi` or `all`. Each language gets an identical copy with that locale byte, so the mod applies whichever language the game runs in. Default: only the source language (English). |
-| `--sparse` (build) | Emit only translated entries, with no English fallback. The game must fall through for omitted keys, which is not verified yet; use the sparse probe before distributing such a build. |
+| `--sparse` (build) | Emit only translated entries, with no English fallback. **Measured 2026-10-31: the game does not fall through for omitted keys** — a sparse build showed missing text, stray numbers and `wwww`. Do not ship one; whole-table is mandatory. |
+| `--prefer-delta` (scan) | Read each pack's strings from `Delta/<pack>` (the current SDX copy), label them by the pack code, and record the root-folder copy as `shadowed-delta`. Measured on the DLC machine: the root copies are years out of date and share the pack's table ID. |
+| `--include-delta` (scan) | Read every Delta package, not only the string files. Off by default because the non-string Delta packages are large and hold no text; Mods-over-Delta precedence is verified for string tables (EP01, 2026-10-31). |
+| `--include-non-english` (scan) | Read tables for languages other than English. Off by default: a mod repeats its text per locale. |
 
 Copy `config.example.json` to `config.json` to set default paths; command-line
 flags always win.
@@ -185,6 +185,10 @@ flags always win.
 > reads `LOAD GAME` / `NEW GAME` again (read by OCR, same screen, same session).
 > Still open from this list: a per-label inspection of the items below rather than
 > a general confirmation. See [Status](#status).
+>
+> The checklist below describes that first 105-table build. The 2026-10-31 DLC
+> wave has not produced a package yet; after it is built, run the same checks
+> against the new one — the table count and content will differ.
 
 The automated tests prove the package is well formed and self-consistent. They
 **cannot** prove the game loads it, renders Estonian letters, or shows the new
@@ -239,8 +243,8 @@ Then launch the game and check:
       Estonian, with proper names such as WickedWhims and MC Command Center kept.
 - [ ] **Optional independent inspection.** Open `dist/!Sims4_Eesti.package` in
       Sims 4 Studio (a separate, independently written tool — *not* a dependency
-      of this project, and not installed on this machine) and confirm it lists
-      105 string tables: the four game tables (`220557DA:00000000:0054935F2685AD48`
+      of this project, and not installed on this machine) and confirm the first
+      build lists 105 string tables: the four game tables (`220557DA:00000000:0054935F2685AD48`
       with 58,374 entries, `...009DD507B385879F` with 230, `...00A9BC4CEC99A5F8`
       with 198 and `...00BEA5E1D2845652` with 269) plus one table for each
       translated mod.
@@ -251,7 +255,7 @@ Then launch the game and check:
       overlapping text.
 - [ ] Record the game version shown in the main menu's bottom corner, plus any
       oddity you saw (this prototype was never run in game by its author — see
-      [Status](#status-and-what-is-unverified)).
+      [Status](#status)).
 
 Finally, verify removal:
 
@@ -268,10 +272,12 @@ later; or the game updated and the package needs a rebuild.
 
 72,275 entries across 105 string tables. `translations/et-EE.json` holds the
 text and `translations/metadata.json` the state and source hash of each entry.
+These were all written on the first machine; the DLC wave on the second machine
+has not imported anything yet.
 
 | Table group | Entries | Translated | What it covers |
 | --- | --- | --- | --- |
-| Base game | 58,374 | 55,871 | the base game, wave 1 complete: every string except names, identifiers and deferred syntax |
+| Base game | 58,419 | 55,871 stored, 5 stale | the base game, wave 1 complete: every string except names, identifiers and deferred syntax |
 | Romantic Garden Stuff (SP06) | 269 | 226 | the pack's item names, tooltips and moodlet text |
 | My First Pet Stuff (SP14) | 230 | 209 | same, for that pack |
 | Backyard Stuff (SP08) | 198 | 190 | same, for that pack |
@@ -280,56 +286,42 @@ text and `translations/metadata.json` the state and source hash of each entry.
 | MC Command Center | 3,201 | 3,161 | settings, commands and dialogs |
 | All other mods (85 packages) | 1,892 | 1,604 | animation packs, object/CC names and descriptions |
 
-The mods account for 15,779 of the 16,278 strings in the 88 mod packages
-(96.9%). The remaining 499 are proper names, world names, brand/URL text,
-progressive `Nintendo…` label fragments and ambiguous duplicate keys that are
-deliberately left English. Three mod packages duplicate another package's table
-ID (`KhyanTristanScreen`, `WW_mike24_Classic`, `WW_mike24_DarkFantasies`); the
-game loads the first-named copy, so 469 translations from the shadowed copies
-were not applied and the winning copies are the ones emitted.
+The mods account for 15,779 of the 16,278 strings in the first machine's 88 mod
+packages (96.9%). The remaining 499 are proper names, world names, brand/URL
+text, progressive `Nintendo…` label fragments and ambiguous duplicate keys that
+are deliberately left English. Three mod packages duplicate another package's
+table ID (`KhyanTristanScreen`, `WW_mike24_Classic`,
+`WW_mike24_DarkFantasies`); the game loads the first-named copy, so 469
+translations from the shadowed copies were not applied and the winning copies
+are the ones emitted.
+
+On the 2026-10-31 machine the Mods folder holds **31,578 strings in 87 packages**.
+15,354 stored translations still match their source; 8 are orphaned by a
+Basemental Real Drink Names table that changed its keys; 417 sit on old mod
+package labels that are no longer installed under those names (renamed or
+replaced packages, chiefly `WW_mike24_DF`/`WW_mike24_DarkFantasies`);
+and 16,010 strings are untranslated, mostly in mods that are new here (NisaK's
+Wicked Perversions 2,535, Devious Desires 2,468, Deviant Core 1,461, CinErotique
+958).
 
 The three packs' tables are translated in full apart from 72 entries the tool
 deliberately leaves in English: gender/plural branches such as
 `{M0.he'd}{F0.she'd}`, HTML-like markup, and empty strings (see
 [Limitations](#limitations-you-should-know-about)).
 
-**Only owned DLC is in scope.** This account owns the three stuff packs above;
-the other pack data present in the installation belongs to packs that are not
-installed or playable, so it is not translated and not part of the backlog. The
-three owned packs are now catalogued from their current `Delta/` copies (game
-version 1.128.90.1030), not the older standalone folders: the Delta tables add
-22 keys and change 9 source texts, and those additions are translated here. What
-is still unverified is whether a Mods package overrides a `Delta/` table at
-load time; the base-game override is verified, the pack path is not.
+**DLC coverage is new and in progress.** The first machine owned three stuff
+packs; the 2026-10-31 machine carries 116 pack tables (163,302 game strings in
+all). A wave started that day exported 94,853 DLC entries covering 103,864 keys,
+with EA's Finnish as a reference on 93.2% of them. Until that wave is imported and
+built, every DLC table outside SP06/SP08/SP14 stays English. The pack tables are
+read from `Delta/<pack>`. A Mods package overriding a `Delta` table was confirmed
+in game on 2026-10-31 with an EP01-only package (it rendered Estonian).
 
-The base game is 95.7%
-translated: the most-seen slice, the syntax slice, and the first ~4,000 strings of
-wave 1 in table order.
-The base game is translated **only** where listed below — 55,871 of its 58,374
-entries are translated, the other 2,503 keep their English text.
-
-The 57 base-game entries, grouped by where you will see them:
-
-| Group | Estonian | Where to look |
-| --- | --- | --- |
-| Main menu | `Jätka mängu`, `Uus mäng`, `Laadi mäng`, `Valikud`, `Halda maailmu`, `Välju mängust`, `Galerii`, `Mängi stsenaariumi`, `Kogu`, `Avaleht` | Main menu |
-| Options dialog tabs | `Mängimine`, `Graafika`, `Heli`, `Juurdepääsetavus`, `Autorid`, `EA konto`, `Õppetunnid`, `Keskkond`, `Mängukaamera` | Options, across the top |
-| Audio screen | `Helitugevus`, `Hääled:`, `Kasutajaliidese heli:`, `Muusika` | Options → Heli |
-| In-game menu | `Menüü`, `Salvesta mäng?`, `Välju peaekraanile`, `Mängu valikud`, `Salvesta mäng` | ESC menu |
-| Pack selection | `Pakettide valik`, `Mängupaketid`, `Laienduspaketid`, `Komplektid`, `Väljalaskemärkmed` | Pack Selection screen |
-| Mode switcher | `Ehitusrežiim`, `Elurežiim` | bottom-left in game |
-| Households and CAS | `Leibkonnad`, `Loo sim` | Manage Worlds, Create a Sim |
-| Build / CAS controls | `Võta tagasi`, `Võta tagasi/Tee uuesti` | build mode |
-| Sim info | `Päevi vananemiseni: {0.Number}` | Sim tooltip / Simology |
-| Build/buy tag | `Heli` | category filter |
-
-Every group was chosen by inspecting the strings that sit next to each label in
-the table (Maxis groups UI text in blocks) — see `docs/IMPLEMENTATION_NOTES.md` for why
-that is the only offline evidence available, and for the one label that was
-chosen wrongly before the first trial. Two labels are deliberately **not**
-translated: `Marketplace` and one of the two `Home` entries, both of which share
-their text with a build/buy list, where a single translation would change a
-category name too.
+On the current base table (58,419 entries), 55,866 translations match their English
+source, 5 are stale because the English changed, and 2,548 remain in English:
+proper names, identifiers, deferred syntax, and the 45 entries added by 1.129.
+The labels confirmed on screen in the first trial are listed in the
+[manual test plan](#manual-in-game-test-plan).
 
 **All 72,275 of these entries are machine-drafted and unreviewed.** `npm run cli --
 build` without `--include-unreviewed` will refuse to apply them, and the manifest
@@ -351,8 +343,8 @@ and style rules they follow, and the `note` on each entry in
   `{0.SimPronounSubjective|xxUpper} can also Mentor others` becomes
   `Hän voi myös opastaa muita`. The validator enforces the mechanics: variant
   branches must survive as whole groups, markup tags character for character,
-  value references inside branches untouched. Measured against the base game's
-  table:
+  value references inside branches untouched. Measured against the first
+  machine's 58,374-entry base table:
 
   | Strings | Share | Status |
   | --- | --- | --- |
@@ -376,13 +368,16 @@ and style rules they follow, and the `note` on each entry in
   probe (`Õ Ä Ö Ü õ ä ö ü Š Ž š ž`), including `Š` and `Ž`, which never appear in
   the game's own English text. Other alphabets' letters remain untested.
 - **Package integrity is verified, game behaviour is not.** See
-  [Status](#status-and-what-is-unverified).
+  [Status](#status).
 
 ## Status
 
-Verified on this machine, with evidence in `docs/IMPLEMENTATION_NOTES.md`:
+### First machine (game 1.128.90.1030) — the deployed artifact
 
-- 109 automated tests pass (`npm test`). The 4 integration tests against the real
+Verified on the first machine, with evidence in `docs/IMPLEMENTATION_NOTES.md`:
+
+- 110 automated tests pass (`npm test`; 109 at the time of the first run, plus the
+  `--prefer-delta` scan test added on 2026-10-31). The 4 integration tests against the real
   `Strings_ENG_US.package` also pass, but only when pointed at it — without
   `SIMS4_EESTI_SOURCE_PACKAGE` they are skipped, and a skipped test is not a pass:
   ```powershell
@@ -408,12 +403,36 @@ Also verified: **removal**. With the package parked outside Mods and the game
 relaunched on the same screen, the buttons read `LOAD GAME` / `NEW GAME` again
 (read by OCR, 2026-10-16, game 1.128.90.1030).
 
+### Second machine (game 1.129.39.1030) — measured 2026-10-31, not yet played
+
+- The 4 integration tests against this machine's `Strings_ENG_US.package` pass
+  (`SIMS4_EESTI_SOURCE_PACKAGE=...` + `npm run test:game`); the full synthetic
+  suite is 110/110.
+- The installation was scanned read-only from the live `Delta/<pack>` copies:
+  **117 game tables and 163,302 strings**; 606 stale root-folder copies recorded
+  as `shadowed-delta`, 1,768 non-English tables skipped. Nothing in the game
+  folder was written to.
+- The stored translations survive the move: 56,491 game entries still match their
+  source by hash, 5 are stale, and **0 game occurrence IDs are orphaned**. The
+  Mods folder, now 31,578 strings in 87 packages, keeps 15,354 matching
+  translations; 8 have changed keys and 417 sit on retired mod package labels
+  (renamed/replaced packages) and are not applied.
+- **Fall-through does not happen.** A two-entry probe overriding only `New Game`
+  and `Options` in the base table (2026-10-31) left the other labels missing,
+  with stray numbers and `wwww` where the omitted text should have been. The game
+  does not fall through to its own table for omitted entries, so **whole-table
+  overrides are mandatory**; a sparse build is not shippable.
+- **Mods overrides a `Delta` pack table.** An EP01-only whole-table package
+  installed in Mods rendered Estonian in game on 2026-10-31, confirming that the
+  live `Delta/EP01` table is replaced by the Mods copy.
+- The **0.4.0 build** (seven tables: base, SP06, SP08, SP14, EP01, EP02 partial,
+  EP06) was installed and launched on this machine: the main menu rendered in
+  Estonian (2026-10-31). It was also downloaded from the Nexus page and deployed
+  with **Vortex** on a second PC, and rendered there after custom content and mods
+  were enabled. Nexus mod page: <https://www.nexusmods.com/thesims4/mods/7387>.
+
 Not verified:
 
-- **Whether a package may override only *some* entries of a table** and have the
-  game fall through for the rest. This build sidesteps the question by shipping
-  each overridden table whole (hence 2.1 MiB rather than a few kilobytes); the
-  probe that would answer it is generated and waiting in `probes/precedence/`.
 - **The mod-table overrides have not been observed in game.** The package
   overrides the English table of each installed mod by resource ID, and the
   load-order probes established that the first-named package wins for a
@@ -430,8 +449,7 @@ Not verified:
   Estonian may drop a whole gender pair (`{M0.his}{F0.her}`), keep both branches
   alike, or write a word where the game would insert an English pronoun is
   inferred from EA's own Finnish translation. None of those three has yet been
-  watched rendering in this game; they belong in the next in-game session, next
-  to the fall-through probe.
+  watched rendering in this game; they belong in the next in-game session.
 - The first 672 entries were translated before the glossary and the Finnish
   reference material existed, so their terminology has been checked
   (`glossary-check`) but not regenerated against those inputs.
@@ -443,27 +461,6 @@ Not verified:
   text is an in-game check, not a verified result. The clock's weekday text was
   traced statically to the executable's locale registry; the Finnish row (`Ma`,
   `Ti`, …) has not been seen on screen.
-
-## Legal and distribution
-
-- This tool reads the game files on your own PC and writes a mod. It does not
-  distribute game content, and this repository contains no game data.
-- The **full build** (105 tables) contains the English text of every overridden
-  mod table (2,915 fallback entries plus the 71,806 translated ones). That
-  includes third-party mod content, so the full package stays private; do not
-  publish it as a release asset.
-- The **game-and-packs build** (4 tables, 56,496 translations) is the package
-  attached to the beta release. It contains 2,575 English fallback entries from
-  EA's own game tables, because whole-table override is the only strategy verified
-  so far. It is published as a noncommercial mod under EA's mod policy; the
-  project is not affiliated with or endorsed by EA or Maxis.
-- `--sparse` can remove that fallback, but only once the game is shown to fall
-  through for omitted keys. Until then, a sparse package is experimental.
-- EA's mod policy requires noncommercial distribution and prohibits suggesting
-  EA or Maxis endorsement. It does not pre-approve this project. Review it before
-  publishing anything: <https://help.ea.com/en/articles/the-sims/the-sims-4/mods-policy/>
-- The translations in `translations/` are machine-drafted and unreviewed. Do not
-  present them as human-reviewed work.
 
 ## Secrets, and the pre-commit guard
 
@@ -497,8 +494,9 @@ src/
   package-io.ts    the only module that touches @s4tk/models
   stbl-format.ts   minimal independent STBL reader, used for verification only
   catalog.ts       extraction, catalog files, search
-  scan.ts          install-wide discovery: base game, packs, Mods; skips Delta
-                   and our own output
+  scan.ts          install-wide discovery: base game, packs, Mods; with
+                   --prefer-delta reads the live Delta/<pack> strings and skips
+                   the stale root copy; always skips our own output
   merge.ts         merges catalogs, refusing label collisions (a rename would
                    orphan translations)
   translate.ts     batch export/import with per-string context, and validation
@@ -517,7 +515,8 @@ tests/             synthetic fixtures, built in code (no game data committed)
 translations/      et-EE.json (text) and metadata.json (state, source hash, origin)
 glossary.json      agreed Estonian terms, with alternatives and the senses learned
                    by triaging what the checker reported
-probes/            in-game experiments (precedence, fall-through) and their results
+probes/            in-game experiments (precedence, fall-through, Mods-vs-Delta)
+                   and their results
 config.example.json
 work/              ignored: catalogs, batches, reference files, backups
 dist/              ignored: built packages
@@ -525,7 +524,7 @@ dist/              ignored: built packages
 
 Phase 1 (one package, one table, safe build, in-game proof) is complete. Phase 2's
 installation-wide catalog, source diffing and bulk translation pipeline are built;
-what remains of it is the review loop and the community side. See
+what remains of it is the DLC wave, the review loop and the community side. See
 `docs/Sims4_Eesti_Implementation_Brief.md`, `docs/PHASE2_DESIGN.md` and
 `docs/IMPLEMENTATION_NOTES.md`. What the project learned the hard way is in
 `LESSONS.md`, and how the remaining
@@ -568,21 +567,23 @@ most of its items cost a day each to learn once.
 
 Everything here — the tool in `src/`, the tests, the Estonian text, the probe
 kits, and these documents — was produced by an AI agent in sessions on
-2026-10-16 through 2026-10-20: **DeepSeek 4.1 Flash** (the model this session's
-environment reports as `deepseek-flash[1m]`), driving the Claude Code harness.
-A model cannot verify its own identity from the inside, so that is recorded as
-the person who ran the sessions states it and as the environment reports it —
-not as something the agent observed. The batch translations come from subagents
-of the same sessions.
+2026-10-16 through 2026-10-20 and again on 2026-10-31: **DeepSeek 4.1 Flash**
+(the model this session's environment reports as `deepseek-flash[1m]`), driving
+the Claude Code harness. A model cannot verify its own identity from the inside,
+so that is recorded as the person who ran the sessions states it and as the
+environment reports it — not as something the agent observed. The batch
+translations come from subagents of the same sessions.
 
 The person in the loop is Lauri. He commissioned the implementation brief — which
 Codex wrote — set the constraints the work runs under (game installation and
 saves read-only, no invented results, no secrets in git), chose what to build at
 each step, and was the hands for everything that needed a human present: running
-the game and its probes, reading the screens, switching Steam to Finnish so the
-agent could read EA's own translation of all 58,374 strings, and supplying the
-paths and credentials. The commits carry his git identity because they were made
-from his machine; the text inside them was not written by him.
+the game and its probes, reading the screens, supplying the paths and
+credentials, and — on the first machine — switching Steam to Finnish so the agent
+could read EA's own translation of all 58,374 strings. On the 2026-10-31 machine
+the Finnish tables were already on disk; the agent read them there. The commits
+carry his git identity because they were made from his machine; the text inside
+them was not written by him.
 
 Two things sit outside that authorship: `docs/Sims4_Eesti_Implementation_Brief.md`
 is Codex's, and the conventions the work was held to came from Lauri's own

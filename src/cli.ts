@@ -141,6 +141,12 @@ const COMMANDS: Record<string, { summary: string; flags: Record<string, FlagSpec
           "Default: 50 for a game installation, 0 elsewhere (a Mods folder needs 0)",
       },
       "include-delta": { boolean: true, help: "Read Delta (SDX) files too; precedence is unsettled" },
+      "prefer-delta": {
+        boolean: true,
+        help:
+          "Read each pack's strings from Delta/<pack> and label them by the pack code; " +
+          "the root-folder copy is recorded as shadowed-delta and skipped",
+      },
       "include-non-english": {
         boolean: true,
         help: "Read tables for languages other than English (a mod repeats its text per locale)",
@@ -484,6 +490,7 @@ function runScan(parsed: ParsedArgs, config: Config): number {
     outDir,
     ...(largeFileBytes !== undefined ? { largeFileBytes } : {}),
     includeDelta: parsed.booleans.has("include-delta"),
+    preferDelta: parsed.booleans.has("prefer-delta"),
     includeNonEnglish: parsed.booleans.has("include-non-english"),
     onProgress: (message) => console.log(message),
   });

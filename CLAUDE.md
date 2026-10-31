@@ -1,6 +1,6 @@
 # Sims 4 Eesti — contributor notes for coding agents
 
-Builds an unofficial Estonian text mod for The Sims 4 from the English string
+Builds a fan-made Estonian text mod for The Sims 4 from the English string
 files on the machine it runs on. Phase 1 (extract → set → validate → build →
 deploy) is complete and verified in game. Beyond it, and directed by the owner
 rather than by the brief's original phase limit: an install-wide catalog, batch
@@ -54,6 +54,10 @@ Paths contain spaces: quote them.
    git-ignored, and blocked by `githooks/pre-commit` along with any
    credential-shaped content. Never commit them, never `git add -f` them, and
    never bypass the hook with `--no-verify`.
+7. **Every emitted table is complete.** The game does **not** fall through to its
+   own text for omitted entries: a two-entry base-game probe on 2026-10-31
+   produced missing labels, stray numbers and `wwww`. `build --sparse` must not be
+   shipped; start from the whole English table every time.
 
 ## Library traps already diagnosed (don't rediscover these)
 
@@ -76,7 +80,8 @@ Paths contain spaces: quote them.
 ## Translation policy (conservative by design)
 
 `src/validation.ts` decides what may be applied. The rules come from a survey of
-the real 58,374-entry table (see `docs/IMPLEMENTATION_NOTES.md`), not from assumption:
+the 1.128.90.1030 base table (58,374 entries; the 1.129 table has 58,419; see
+`docs/IMPLEMENTATION_NOTES.md`), not from assumption:
 
 - Runtime values are preserved as a **multiset** — reordering is allowed, losing
   or adding a repetition is not. The name list is closed and measured (44 names
@@ -117,6 +122,13 @@ the real 58,374-entry table (see `docs/IMPLEMENTATION_NOTES.md`), not from assum
 - Never treat `%` as a formatting token. Never reject a whole table because one
   untranslated entry has complex syntax.
 
+## Owner preferences
+
+- **No licensing/legal boilerplate.** The owner rejects copyright, licence,
+  permission and distribution-law sections in docs, release notes and Nexus copy.
+  Keep the technical facts that affect use — game version, English fallback,
+  machine-drafted status — and leave the legal framing out.
+
 ## Lessons already paid for
 
 `LESSONS.md` holds the hard-won ones — read it before designing a rule, a
@@ -128,9 +140,10 @@ behind it.
 - **Never claim more of the in-game gate than `README.md`'s Status records.** The
   gate is manual and lives in `README.md`; parts of it have been run (the package
   loads, Estonian letters render, removal restores English, first-named package
-  wins) and parts have not (fall-through, branch deletion and pronoun
-  substitution, per-label inspection). Package integrity is verified; game
-  behaviour is only verified where Status says so.
+  wins, on 2026-10-31 the fall-through probe **failed**, and an EP01-only package
+  confirmed that Mods overrides a `Delta` pack table) and parts have not (branch
+  deletion and pronoun substitution in game, per-label inspection). Package
+  integrity is verified; game behaviour is only verified where Status says so.
 - **Never invent** resource IDs, game versions, test results, or observations.
   `build --game-version` records a version only when supplied; otherwise the
   manifest says "not recorded".
@@ -143,8 +156,6 @@ behind it.
   the closing footnote of `README.md` records by what, in which sessions, and
   with what human involvement. Update it when that changes rather than letting it
   drift.
-- Keep the built package private pending a distribution review; it contains the
-  English fallback text of the overridden table.
 
 Shell scripts (`githooks/*`, `*.sh`) must keep LF endings. `.gitattributes`
 pins that inside git, but editors on Windows write CRLF into the worktree — check
@@ -154,11 +165,25 @@ with `git ls-files --eol <path>` after editing one, and normalise if it shows
 ## Layout and build strategy
 
 `src/cli.ts` (commands) · `package-io.ts` (library adapter) · `catalog.ts`
-(extract/search) · `translations.ts` (text + metadata storage) · `validation.ts`
-(policy) · `build.ts` (whole-table override + verification) · `deploy.ts` (one-file
-install) · `ids.ts`, `hashing.ts`, `stbl-format.ts`. Tests mirror these modules.
+(extract/search) · `scan.ts` (install-wide discovery, `--prefer-delta`) ·
+`merge.ts` (combine catalogs without label collisions) · `translate.ts`
+(batch export/import + validation) · `references.ts` (Finnish/sibling-locale
+hints) · `glossary.ts` (terminology) · `translations.ts` (text + metadata
+storage) · `validation.ts` (policy) · `build.ts` (whole-table override +
+verification) · `deploy.ts` (one-file install) · `ids.ts`, `hashing.ts`,
+`stbl-format.ts`. Tests mirror these modules.
+
+## Where pack strings live (measured 2026-10-31)
+
+On an installation with many packs, the live strings are
+`Delta/<PACK>/Strings_ENG_US.package`; the root `<PACK>/Strings_ENG_US.package`
+copies are stale and share the pack's table ID. `scan --prefer-delta` reads the
+Delta copy, labels it `<PACK>` (so existing `SP06|…` IDs stay valid), and records
+the root copy as `shadowed-delta`. A Mods package overriding a `Delta` resource
+was confirmed in game on 2026-10-31 with an EP01-only package; the base game was
+confirmed earlier. Other pack tables are overridden by the same mechanism.
 
 For each affected table, start from the **complete original English table**,
 replace only eligible entries, and emit only affected tables. The English text of
-untranslated entries is the fallback — do not assume the game falls through to the
-original resource for missing entries.
+untranslated entries is the fallback. This is not an assumption: the game was
+measured not to fall through for omitted entries (2026-10-31).

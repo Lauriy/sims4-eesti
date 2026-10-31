@@ -13,7 +13,14 @@ import { after, before, describe, it } from "node:test";
 import { buildPackage, BuildError } from "../src/build.js";
 import { loadCatalog } from "../src/catalog.js";
 import { readStblTables } from "../src/package-io.js";
-import { coverageByPackage, findPackages, isDeltaPath, labelFor, scanInstallation } from "../src/scan.js";
+import {
+  coverageByPackage,
+  deltaPackOf,
+  findPackages,
+  isDeltaPath,
+  labelFor,
+  scanInstallation,
+} from "../src/scan.js";
 import { SAMPLE_KEYS, makeTempDir, removeDir, writeFixturePackage } from "./helpers.js";
 
 let root: string;
@@ -128,6 +135,67 @@ describe("scan classification", () => {
     const catalog = loadCatalog(catalogPath);
     assert.equal(new Set(catalog.occurrences.map((occurrence) => occurrence.occurrenceId)).size, 3);
     assert.ok(catalog.occurrences.some((occurrence) => occurrence.packageLabel === "SP06"));
+  });
+});
+
+describe("--prefer-delta", () => {
+  it("reads the Delta copy, labels it by pack code, and shadows the root copy", () => {
+    const deltaRoot = makeTempDir("prefer-delta");
+    try {
+      const client = join(deltaRoot, "Data", "Client");
+      const pack = join(deltaRoot, "SP06");
+      const delta06 = join(deltaRoot, "Delta", "SP06");
+      const delta07 = join(deltaRoot, "Delta", "SP07");
+      for (const dir of [client, pack, delta06, delta07]) mkdirSync(dir, { recursive: true });
+
+      writeFixturePackage(join(client, "Strings_ENG_US.package"), [
+        { instance: 0x0054935f2685ad48n, entries: [{ key: SAMPLE_KEYS.newGame, text: "New Game" }] },
+      ]);
+      writeFixturePackage(join(pack, "Strings_ENG_US.package"), [
+        { instance: 0x00bea5e1d2845652n, entries: [{ key: SAMPLE_KEYS.resume, text: "Root copy" }] },
+      ]);
+      writeFixturePackage(join(delta06, "Strings_ENG_US.package"), [
+        { instance: 0x00bea5e1d2845652n, entries: [{ key: SAMPLE_KEYS.resume, text: "Delta copy" }] },
+      ]);
+      // A Delta package that is not named like strings must not be read as text.
+      writeFixturePackage(join(delta06, "ClientDeltaBuild0.package"), [
+        { instance: 0x0011111111111111n, entries: [{ key: SAMPLE_KEYS.greeting, text: "No text" }] },
+      ]);
+      // A pack that exists only under Delta.
+      writeFixturePackage(join(delta07, "Strings_ENG_US.package"), [
+        { instance: 0x00deadbeefdeadben, entries: [{ key: SAMPLE_KEYS.greeting, text: "Only delta" }] },
+      ]);
+
+      const files = findPackages(deltaRoot);
+      const delta06Strings = files.find((file) => /Delta[\\/]SP06[\\/]Strings_ENG_US/.test(file))!;
+      const delta07Strings = files.find((file) => /Delta[\\/]SP07[\\/]Strings_ENG_US/.test(file))!;
+      assert.equal(deltaPackOf(deltaRoot, delta06Strings), "SP06");
+      assert.equal(labelFor(deltaRoot, delta07Strings, files, true), "SP07");
+
+      const result = scanInstallation({
+        gameRoot: deltaRoot,
+        outDir: join(deltaRoot, "out"),
+        largeFileBytes: 1,
+        preferDelta: true,
+      });
+      const byPath = new Map(result.index.packages.map((entry) => [entry.path, entry]));
+      assert.equal(byPath.get("SP06/Strings_ENG_US.package")!.disposition, "shadowed-delta");
+      assert.equal(byPath.get("Delta/SP06/Strings_ENG_US.package")!.disposition, "read");
+      assert.equal(byPath.get("Delta/SP06/ClientDeltaBuild0.package")!.disposition, "excluded-delta");
+      assert.equal(byPath.get("Delta/SP07/Strings_ENG_US.package")!.disposition, "read");
+      assert.equal(result.index.totals.entries, 3);
+
+      const rows = coverageByPackage(result.catalog);
+      assert.deepEqual(
+        rows.map((row) => row.label).sort(),
+        ["BASE", "SP06", "SP07"]
+      );
+      const sp06 = result.catalog.occurrences.filter((occurrence) => occurrence.packageLabel === "SP06");
+      assert.equal(sp06.length, 1, "the root copy and the Delta copy do not both contribute");
+      assert.equal(sp06[0]!.sourceText, "Delta copy");
+    } finally {
+      removeDir(deltaRoot);
+    }
   });
 });
 
