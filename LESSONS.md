@@ -181,3 +181,31 @@ to.
 - **The game is the only source of truth for game behaviour.** Everything else —
   library round-trips, independent byte readers, fixtures — verifies the artifact,
   not what the player sees.
+
+## 12. A spell checker is a triage queue, and a good one
+
+The lint catches Finnish word *forms* by their endings. It cannot see a Finnish
+word that is spelled like a plausible Estonian form, or a Finnish compound buried
+in an ordinary sentence. Filosoft's Estonian speller, fed HTML-entity-encoded
+lines in bulk, flagged 5,058 distinct unknown words across 80,801 stored
+translations. Most were slang, loans, names and valid game compounds; triage
+found about 420 real defects that the lint and the glossary check had missed:
+
+- Finnish words: `kyltt`/`kylti` for *silt* (56), `Tarjoile` for *Serveeri* (22),
+  `kategoriast` (21), `Viikatemies` (25), `suhkrukallot`, `salakuljetaja`,
+  `pariovi`, `naulakko`, `lumiukko`, `maljakko`, `tekoäly`, `pyykkikorv`,
+  `sohvapöytä`, `ukonhattu`, `sypress`, `hyyteljas`, `omahyväisena`.
+- Hybrids and typos: `tolpperustus` (Estonian *tolp* + Finnish *perustus*),
+  `riiselevat`, `röyhel-paneelid`, `plyüš`, `fyysiline`, `koenäyted`.
+- Wrong sense: `Filthy` rendered as *Must* (black) instead of *Räpane*.
+
+**How to use it:** POST `doc=<HTML-escaped text>&out=M&suggest=yes` to
+`https://www.filosoft.ee/html_speller_et/html_spell.cgi`. The response keeps line
+order and wraps each unknown word in `<span data-fs-suggest="...">`. Strip tags,
+placeholders and URLs; send one entry per line; filter tokens that also occur in
+the English source (names, brands) before reading. Expect false positives: valid
+slang (*klatsi*, *blänt*), loans (*animaator*), names and game compounds.
+
+**Why it matters more than the lint:** the lint encodes failures already seen;
+the speller finds failures nobody has seen. Run it over the stored translations
+before a build, not after.

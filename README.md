@@ -7,18 +7,19 @@ It is a local command-line tool, not a translation website and not an installer:
 you point it at one English `.package`, pick strings, write Estonian text, and it
 writes one `.package` you can drop into your Mods folder.
 
-**Scope of this prototype:** an install-wide catalog (on the 2026-10-31 machine,
-**194,880 English strings across 230 tables**: the base game's 58,419, 116 DLC
-pack tables read from the live `Delta/<pack>` copies, and 87 mod packages) and
-**72,275 stored translations across 105 string tables (71,845 still matching
-their English source)** — all from the first machine's run: the base game,
-Romantic Garden Stuff (SP06), Backyard Stuff (SP08),
-My First Pet Stuff (SP14), and the English string tables of the installed mods
-(WickedWhims, Basemental Drugs, MC Command Center, and the rest). A DLC wave
-started 2026-10-31 is translating the remaining 106,806 game and 16,010 mod
-strings; until it lands, that text stays English. Untranslated entries keep their
-English text. This is not a complete Estonian localisation of the game, and no
-translation here has been reviewed by a human.
+**Scope:** an install-wide catalog (on the 2026-10-31 machine **194,880 English
+strings across 230 tables**: 163,302 game strings in 117 tables read from the
+live `Delta/<pack>` copies, and 31,578 strings in 87 mod packages) and
+**107,778 stored translations** — 92,424 game strings (56.6% of the game) and
+15,354 mod strings.
+
+The **0.5.0 release ships 91,565 translations across 14 tables**: the base game,
+EP01–EP10 and three stuff packs, with 3,355 entries deliberately left in English.
+EP11 and later, the game packs and most stuff packs have barely been started;
+mod translations exist but are **not part of 0.5.0** — they are deferred until the
+later DLC text is translated, so they inherit its terminology. Untranslated
+entries keep their English text. This is not a complete Estonian localisation of
+the game, and no translation here has been reviewed by a human.
 
 ---
 
@@ -270,30 +271,34 @@ later; or the game updated and the package needs a rebuild.
 
 ## What is translated today
 
-72,275 entries across 105 string tables. `translations/et-EE.json` holds the
-text and `translations/metadata.json` the state and source hash of each entry.
-These were all written on the first machine; the DLC wave on the second machine
-has not imported anything yet.
+107,778 entries across the install-wide catalog. `translations/et-EE.json` holds
+the text and `translations/metadata.json` the state and source hash of each
+entry. The 0.5.0 package ships the 14 tables below; the later packs and the game
+packs are queued, and the mod tables are not shipped in this version.
 
 | Table group | Entries | Translated | What it covers |
 | --- | --- | --- | --- |
-| Base game | 58,419 | 55,871 stored, 5 stale | the base game, wave 1 complete: every string except names, identifiers and deferred syntax |
-| Romantic Garden Stuff (SP06) | 269 | 226 | the pack's item names, tooltips and moodlet text |
+| Base game | 58,419 | 56,328 | every string except names, identifiers and deferred syntax |
+| Get to Work (EP01) | 4,476 | 4,345 | careers, retail, aliens |
+| Get Together (EP02) | 2,431 | 2,302 | Windenburg, clubs |
+| City Living (EP03) | 5,245 | 4,903 | San Myshuno, apartments, festivals |
+| Cats & Dogs (EP04) | 3,248 | 3,087 | pets, vet clinics, Brindleton Bay |
+| Seasons (EP05) | 3,169 | 3,096 | weather, holidays, calendars |
+| Get Famous (EP06) | 4,145 | 4,071 | acting, fame, Del Sol Valley |
+| Island Living (EP07) | 2,311 | 2,225 | Sulani, mermaids, conservation |
+| Discover University (EP08) | 4,744 | 4,679 | Britechester, Foxbury, degrees |
+| Eco Lifestyle (EP09) | 2,898 | 2,855 | Evergreen Harbor, fabrication, N.A.P. |
+| Snowy Escape (EP10) | 3,137 | 3,049 | Mt. Komorebi, snow sports, lifestyles |
+| Romantic Garden Stuff (SP06) | 269 | 226 | item names, tooltips, moodlet text |
 | My First Pet Stuff (SP14) | 230 | 209 | same, for that pack |
 | Backyard Stuff (SP08) | 198 | 190 | same, for that pack |
-| WickedWhims (Tuning) | 6,354 | 6,269 | the mod's interactions, settings, moodlets and notifications |
-| Basemental Drugs | 4,831 | 4,745 | drugs, effects, settings and notifications |
-| MC Command Center | 3,201 | 3,161 | settings, commands and dialogs |
-| All other mods (85 packages) | 1,892 | 1,604 | animation packs, object/CC names and descriptions |
+| **Shipped total** | **94,920** | **91,565 (96.5%)** | 3,355 entries stay English |
+| Mods (not shipped) | 31,578 | 15,354 | deferred to a later release |
 
-The mods account for 15,779 of the 16,278 strings in the first machine's 88 mod
-packages (96.9%). The remaining 499 are proper names, world names, brand/URL
-text, progressive `Nintendo…` label fragments and ambiguous duplicate keys that
-are deliberately left English. Three mod packages duplicate another package's
-table ID (`KhyanTristanScreen`, `WW_mike24_Classic`,
-`WW_mike24_DarkFantasies`); the game loads the first-named copy, so 469
-translations from the shadowed copies were not applied and the winning copies
-are the ones emitted.
+In the stored mod translations, three packages duplicate another package's table
+ID (`KhyanTristanScreen`, `WW_mike24_Classic`, `WW_mike24_DarkFantasies`); the
+game loads the first-named copy, so 469 translations from the shadowed copies are
+not applied and the winning copies are the ones emitted.
 
 On the 2026-10-31 machine the Mods folder holds **31,578 strings in 87 packages**.
 15,354 stored translations still match their source; 8 are orphaned by a
@@ -311,19 +316,18 @@ deliberately leaves in English: gender/plural branches such as
 
 **DLC coverage is new and in progress.** The first machine owned three stuff
 packs; the 2026-10-31 machine carries 116 pack tables (163,302 game strings in
-all). A wave started that day exported 94,853 DLC entries covering 103,864 keys,
-with EA's Finnish as a reference on 93.2% of them. Until that wave is imported and
-built, every DLC table outside SP06/SP08/SP14 stays English. The pack tables are
+all). The 2026-10-31 wave translated the base game and EP01–EP10; 0.5.0 ships
+those 14 tables, and every later pack still stays English. The pack tables are
 read from `Delta/<pack>`. A Mods package overriding a `Delta` table was confirmed
 in game on 2026-10-31 with an EP01-only package (it rendered Estonian).
 
-On the current base table (58,419 entries), 55,866 translations match their English
-source, 5 are stale because the English changed, and 2,548 remain in English:
-proper names, identifiers, deferred syntax, and the 45 entries added by 1.129.
+On the current base table (58,419 entries), 56,328 translations match their English
+source and 2,091 remain in English: proper names, identifiers, deferred syntax, and
+the 45 entries added by 1.129.
 The labels confirmed on screen in the first trial are listed in the
 [manual test plan](#manual-in-game-test-plan).
 
-**All 72,275 of these entries are machine-drafted and unreviewed.** `npm run cli --
+**All 107,778 stored translations (91,565 of them shipped in 0.5.0) are machine-drafted and unreviewed.** `npm run cli --
 build` without `--include-unreviewed` will refuse to apply them, and the manifest
 reports `reviewedApplied: 0` — no human has reviewed these translations, and none
 of them was produced by a human translator. See `glossary.json` for the vocabulary
@@ -425,6 +429,10 @@ relaunched on the same screen, the buttons read `LOAD GAME` / `NEW GAME` again
 - **Mods overrides a `Delta` pack table.** An EP01-only whole-table package
   installed in Mods rendered Estonian in game on 2026-10-31, confirming that the
   live `Delta/EP01` table is replaced by the Mods copy.
+- The **0.5.0 build** (14 tables: base, EP01–EP10, SP06, SP08, SP14) passes the
+  build's own verification: the package is reopened with the library and compared
+  entry by entry against an independent byte-level reader. It has **not yet been
+  launched in game**.
 - The **0.4.0 build** (seven tables: base, SP06, SP08, SP14, EP01, EP02 partial,
   EP06) was installed and launched on this machine: the main menu rendered in
   Estonian (2026-10-31). It was also downloaded from the Nexus page and deployed
@@ -443,7 +451,7 @@ Not verified:
 - No systematic clipping check on the longer labels, and the individual labels of
   the main checklist were not each confirmed by eye — the tester's confirmation was
   general, plus the Audio tab probe specifically.
-- **No human has reviewed the 72,275 translations.** All are machine-drafted and the
+- **No human has reviewed the 107,778 stored translations.** All are machine-drafted and the
   manifest reports `reviewedApplied: 0`.
 - **The branch rules rest on shipped evidence, not on this machine.** That
   Estonian may drop a whole gender pair (`{M0.his}{F0.her}`), keep both branches

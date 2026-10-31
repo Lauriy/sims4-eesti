@@ -120,25 +120,35 @@ soonest, not by string count:
    13 recent kits; those are translated from English with base-game precedents.
 4. **The new mods last** (16,010 strings), as before: they inherit the game's
    vocabulary, and the three updated big mods have 211 new strings among them.
-5. **Consistency, then review.** `glossary-check`, `lint`, and the same-English /
-   different-Estonian report; fix the five stale base strings; then the human
-   review loop, which remains the only path to `reviewed`.
+5. **Consistency, then review.** `glossary-check`, `lint`, the same-English /
+   different-Estonian report, and the bulk spell check against Filosoft
+   (`work/spellcheck.py`, see LESSONS.md §12); fix the five stale base strings;
+   then the human review loop, which remains the only path to `reviewed`.
 
 Cost control: one 400-string batch per translator, deduped across packs, Finnish
 reference capped at one language (it is the only one most packs have), and no
 re-translation of the 56,491 strings that already match.
 
-## Release 0.5.0 — include everything
+## Release 0.5.0 — game through EP10, no mods (owner decision, 2026-10-31)
 
-The 0.4.0 public release (2026-10-31) is deliberately game-only: base game, SP06,
-SP08, SP14, EP01, EP06, and partial EP02. The owner's requirement for the next
-release is to include **all completed work**, including the mod translations:
-15,047 applied entries across 53 tables in 35 mod packages, built from
-`work/mods/catalog.json` and version-locked by `MODS.txt` (filename + sha256 per
-package). New mods added on the 2026-10-31 machine (Devious Desires, NisaK,
-CinErotique, etc.) are still untranslated and are not part of that 15,047.
+Scope: **everything translated through EP10** — base game, EP01–EP10, plus whatever
+other packs already have entries — released on GitHub and Nexus. **Mods are not
+included.** They are deliberately deferred until the later DLC text exists, so they
+inherit the better terminology; they ship in a later release as their own optional,
+version-locked package (`MODS.txt` with filename + sha256 per package), never merged
+into the universal game package. The mod queue stays ready in `work/batches/mods/`
+(36 batches / 14,015 strings) plus the 15,047 parked entries.
 
-Whole-table mod overrides are version-coupled: if a user's mod differs from the
-listed hash, strings added by the update will be missing. Ship the mod tables as a
-separate optional file (or clearly version-locked), never silently merged into the
-universal game package. Add any DLC packs completed by then to the game package.
+Release steps once EP10 is done (batch-011 and any residual EP10 strings):
+
+1. Import every finished batch; check EP10 coverage and translate any residual
+   EP10 strings.
+2. **Quality passes after the last import**: spell check, same-text drift report,
+   `work/fix-weird*.ts` passes (imports overwrite earlier fixes, observed with
+   `kyltt` → `silt`).
+3. Build the whole-table game package with `--game-version 1.129.39.1030`; the
+   build's own verification must pass.
+4. Update `README.md`, release notes, manifest; run tests and typecheck.
+5. GitHub release `v0.5.0-beta` with the package or zip; Nexus page 7387 version
+   0.5.0 with the new file. No mod file in either release.
+6. Commit and push the repository.

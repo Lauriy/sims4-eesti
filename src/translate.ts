@@ -150,6 +150,7 @@ const STYLE_NOTES = [
   "Moodlet sources, the 1,588 strings shaped \"(From X)\", are written \"(X tõttu)\" in Estonian - \"(From Snob Trait)\" -> \"(snobi iseloomujoone tõttu)\", \"(From Mixology Skill)\" -> \"(miksimise oskuse tõttu)\". Use this form and no other: half the first batches chose \"(põhjus: X)\" and half chose this, which is the drift the glossary exists to prevent.",
   "Pronouns the game inserts - {0.SimPronounSubjective}, {0.SimPronounObjective}, {0.SimPronounPossessiveDependent}, {0.SimPronounReflexive}, with or without a |xxUpper modifier - render as English words, because the game's own text is English here. Replace them with the Estonian word instead (ta, tema, teda, oma), matching the capitalisation the modifier asked for: {0.SimPronounSubjective|xxUpper} can also Mentor others -> Ta võib ka teisi õpetada. Keeping the placeholder is allowed if you cannot word it, but the player will see an English pronoun.",
   "Use the Finnish reference for terminology and for how EA handled a construct - never by copying a word from it. Finnish verb and case forms are not Estonian: \"flirttailla\" is Finnish, and the Estonian is \"flirtima\", imperative \"flirta\". A word that exists only in Finnish is a defect, and the project lints for it.",
+  "Known Finnish false friends seen in this project's drafts; never copy these Finnish words: kyltt/kyltti (sign) -> silt/sildi; tarjoile (serve) -> serveeri; pyykki (laundry) -> pesu; pöytä (table) -> laud (sohvapöytä -> diivanilaud); lohikäärme (dragon) -> draakon; suhkrukallot (sugar skulls) -> suhkrkoljud; seinämaalaus (mural) -> seinamaal; kierrätys/kierrätus (recycling) -> ringlus/taaskasutus; leikkisä (playful) -> mänguline; hyytelö (jelly) -> tarretis. The Finnish reference may show these forms; they are not Estonian.",
   "If a string cannot be translated without breaking the rules above, leave it out of the answer rather than guessing - it will stay English and be reported.",
 ];
 
@@ -576,8 +577,12 @@ function collectJsonFiles(inputs: string[]): string[] {
       for (const entry of readdirSync(input, { withFileTypes: true })) {
         const full = join(input, entry.name);
         if (entry.isDirectory()) files.push(...collectJsonFiles([full]));
-        // Skip the untranslated batches themselves; they are English on purpose.
-        else if (entry.name.endsWith(".json") && !/^batch-\d+\.json$/.test(entry.name)) files.push(full);
+        // Read answers and overrides only. The untranslated batches are English on
+        // purpose, and scratch files (part files, notes, dumps) must not break an
+        // import by being picked up as answers.
+        else if (/^batch-\d+\.translated\.json$/.test(entry.name) || entry.name.endsWith(".overrides.json")) {
+          files.push(full);
+        }
       }
     } else {
       files.push(input);
