@@ -1093,6 +1093,710 @@
         "suhkrukoljut",
         "suhkrukoljude"
       ]
+    },
+    {
+      "en": "Riding",
+      "et": "ratsutamine",
+      "note": "horse riding as an activity; verb ratsutama, genitive ratsutamise.",
+      "accept": [
+        "ratsutamine",
+        "ratsutamise",
+        "ratsutamist",
+        "ratsutama",
+        "ratsutada"
+      ]
+    },
+    {
+      "en": "Riding Skill",
+      "et": "ratsutamisoskus",
+      "note": "Horse Ranch skill.",
+      "accept": [
+        "ratsutamisoskus",
+        "ratsutamisoskuse",
+        "ratsutamisoskust"
+      ]
+    },
+    {
+      "en": "Show Jumping",
+      "et": "takistussõit",
+      "note": "horse competition.",
+      "accept": [
+        "takistussõit",
+        "takistussõidu",
+        "takistussõidul"
+      ]
+    },
+    {
+      "en": "Barrel Racing",
+      "et": "tünnisõit",
+      "note": "horse competition.",
+      "accept": [
+        "tünnisõit",
+        "tünnisõidu",
+        "tünnisõidul"
+      ]
+    },
+    {
+      "en": "Ultimate Horse Championship",
+      "et": "ülima hobuse meistrivõistlused",
+      "note": "Horse Ranch championship.",
+      "accept": [
+        "ülima hobuse meistrivõistlused",
+        "ülima hobuse meistrivõistluste"
+      ]
+    },
+    {
+      "en": "Ranch Hand",
+      "et": "rantšotööline",
+      "note": "ranch role; ranch worker (not tallitööline or karjatalitaja).",
+      "accept": [
+        "rantšotööline",
+        "rantšotöölised",
+        "rantšotöölist"
+      ]
+    },
+    {
+      "en": "Rancher",
+      "et": "rantšopidaja",
+      "note": "ranch role; the person who runs the ranch (not karjakasvataja, which is a cattle breeder).",
+      "accept": [
+        "rantšopidaja",
+        "rantšopidajad",
+        "rantšopidajat"
+      ]
+    },
+    {
+      "en": "Endurance Racing",
+      "et": "kestvussõit",
+      "note": "horse competition; the equestrian sport (not vastupidavusvõistlus).",
+      "accept": [
+        "kestvussõit",
+        "kestvussõidu",
+        "kestvussõidul"
+      ]
+    },
+    {
+      "en": "Agility",
+      "et": "väledus",
+      "note": "Horse Ranch skill label; compounds take väledus- (väledusoskus).",
+      "accept": [
+        "väledus",
+        "väleduse",
+        "väledust"
+      ]
+    },
+    {
+      "en": "Jumping",
+      "et": "hüppamine",
+      "note": "Horse Ranch skill label; compounds take hüppamis- (hüppamisoskus).",
+      "accept": [
+        "hüppamine",
+        "hüppamise",
+        "hüppamist"
+      ]
+    },
+    {
+      "en": "Endurance",
+      "et": "vastupidavus",
+      "note": "Horse Ranch skill label; compounds take vastupidavus- (vastupidavusoskus).",
+      "accept": [
+        "vastupidavus",
+        "vastupidavuse",
+        "vastupidavust"
+      ]
+    },
+    {
+      "en": "Nectar Making",
+      "et": "nektarivalmistus",
+      "note": "Horse Ranch skill label; compounds take nektarivalmistus- (nektarivalmistusoskus).",
+      "accept": [
+        "nektarivalmistus",
+        "nektarivalmistuse",
+        "nektarivalmistust"
+      ]
+    },
+    {
+      "en": "Agility Skill",
+      "et": "väledusoskus",
+      "note": "Horse Ranch skill in prose.",
+      "accept": [
+        "väledusoskus",
+        "väledusoskuse",
+        "väledusoskust"
+      ]
+    },
+    {
+      "en": "Jumping Skill",
+      "et": "hüppamisoskus",
+      "note": "Horse Ranch skill in prose.",
+      "accept": [
+        "hüppamisoskus",
+        "hüppamisoskuse",
+        "hüppamisoskust"
+      ]
+    },
+    {
+      "en": "Endurance Skill",
+      "et": "vastupidavusoskus",
+      "note": "Horse Ranch skill in prose.",
+      "accept": [
+        "vastupidavusoskus",
+        "vastupidavusoskuse",
+        "vastupidavusoskust"
+      ]
+    },
+    {
+      "en": "Temperament Skill",
+      "et": "temperamendioskus",
+      "note": "Horse Ranch skill in prose; the bare label is Temperament (same in Estonian).",
+      "accept": [
+        "temperamendioskus",
+        "temperamendioskuse",
+        "temperamendioskust"
+      ]
+    },
+    {
+      "en": "Nectar Making Skill",
+      "et": "nektarivalmistusoskus",
+      "note": "Horse Ranch skill in prose.",
+      "accept": [
+        "nektarivalmistusoskus",
+        "nektarivalmistusoskuse",
+        "nektarivalmistusoskust"
+      ]
+    },
+    {
+      "en": "Netherworld",
+      "et": "allilm",
+      "note": "Life & Death realm of the dead; allmaailm is an acceptable synonym.",
+      "accept": [
+        "allilm",
+        "allilma",
+        "allilmas",
+        "allmaailm",
+        "allmaailma"
+      ]
+    },
+    {
+      "en": "Soul's Journey",
+      "et": "Hingereis",
+      "note": "Life & Death feature name.",
+      "accept": [
+        "Hingereis",
+        "Hingereisi",
+        "Hingereisil"
+      ]
+    },
+    {
+      "en": "Rebirth",
+      "et": "Taassünd",
+      "note": "Life & Death feature; not jälle sündimine.",
+      "accept": [
+        "Taassünd",
+        "Taassünni",
+        "Taassündi"
+      ]
+    },
+    {
+      "en": "Bucket List",
+      "et": "unistuste nimekiri",
+      "note": "Life & Death feature.",
+      "accept": [
+        "unistuste nimekiri",
+        "unistuste nimekirja",
+        "unistuste nimekirjas"
+      ]
+    },
+    {
+      "en": "Heirloom",
+      "et": "pärandkalleus",
+      "note": "Life & Death family object.",
+      "accept": [
+        "pärandkalleus",
+        "pärandkalleuse",
+        "pärandkalleust"
+      ]
+    },
+    {
+      "en": "Inheritance Lawyer",
+      "et": "pärimisjurist",
+      "note": "Life & Death career/role.",
+      "accept": [
+        "pärimisjurist",
+        "pärimisjuristi",
+        "pärimisjuristiga"
+      ]
+    },
+    {
+      "en": "Ghost Whisperer",
+      "et": "kummitusekuiskaaja",
+      "note": "Life & Death aspiration/trait.",
+      "accept": [
+        "kummitusekuiskaaja",
+        "kummitusekuiskaaja",
+        "kummitusekuiskaajaga"
+      ]
+    },
+    {
+      "en": "Ghost Mastery",
+      "et": "kummituste meisterlikkus",
+      "note": "Life & Death skill/feature.",
+      "accept": [
+        "kummituste meisterlikkus",
+        "kummituste meisterlikkuse"
+      ]
+    },
+    {
+      "en": "Unfinished Business",
+      "et": "lõpetamata asjad",
+      "note": "Life & Death ghost feature.",
+      "accept": [
+        "lõpetamata asjad",
+        "lõpetamata asjade",
+        "lõpetamata asju"
+      ]
+    },
+    {
+      "en": "Afterlife Anonymous",
+      "et": "Teispoolsuse Anonüümsed",
+      "note": "Life & Death club; not Teispoolsus Anonüümsed.",
+      "accept": [
+        "Teispoolsuse Anonüümsed",
+        "Teispoolsuse Anonüümsete"
+      ]
+    },
+    {
+      "en": "Thinned Festiveil",
+      "et": "Hõrenenud Loori festival",
+      "note": "Life & Death event; keep the festival name.",
+      "accept": [
+        "Hõrenenud Loori festival",
+        "Hõrenenud Loori festivali"
+      ]
+    },
+    {
+      "en": "The Baleful Bog",
+      "et": "Hukatuslik soo",
+      "note": "Life & Death location.",
+      "accept": [
+        "Hukatuslik soo",
+        "Hukatusliku soo"
+      ]
+    },
+    {
+      "en": "eulogy",
+      "et": "mälestuskõne",
+      "note": "funeral speech.",
+      "accept": [
+        "mälestuskõne",
+        "mälestuskõnega",
+        "mälestuskõnet"
+      ]
+    },
+    {
+      "en": "gravestone",
+      "et": "hauakivi",
+      "note": "funeral object.",
+      "accept": [
+        "hauakivi",
+        "hauakivi",
+        "hauakivide"
+      ]
+    },
+    {
+      "en": "coffin",
+      "et": "kirst",
+      "note": "funeral object.",
+      "accept": [
+        "kirst",
+        "kirstu",
+        "kirstus"
+      ]
+    },
+    {
+      "en": "Grimbrosia",
+      "et": "Grimboosia",
+      "note": "Life & Death food/ambrosia variant.",
+      "accept": [
+        "Grimboosia",
+        "Grimboosiat"
+      ]
+    },
+    {
+      "en": "Soul Reaping",
+      "et": "hingede niitmine",
+      "note": "Reaper career activity.",
+      "accept": [
+        "hingede niitmine",
+        "hingede niitmise",
+        "hingede niitmist"
+      ]
+    },
+    {
+      "en": "Grimtern",
+      "et": "niitjaõppur",
+      "note": "Reaper intern.",
+      "accept": [
+        "niitjaõppur",
+        "niitjaõppuri",
+        "niitjaõppurit"
+      ]
+    },
+    {
+      "en": "Undertaker",
+      "et": "matusekorraldaja",
+      "note": "Life & Death career.",
+      "accept": [
+        "matusekorraldaja",
+        "matusekorraldaja",
+        "matusekorraldajad"
+      ]
+    },
+    {
+      "en": "Ghost Power",
+      "et": "kummitusvõime",
+      "note": "ghost ability.",
+      "accept": [
+        "kummitusvõime",
+        "kummitusvõime",
+        "kummitusvõimeid"
+      ]
+    },
+    {
+      "en": "Essence",
+      "et": "essents",
+      "note": "Life & Death resource.",
+      "accept": [
+        "essents",
+        "essentsi",
+        "essentsi"
+      ]
+    },
+    {
+      "en": "Guardian Tree",
+      "et": "Valvuripuu",
+      "note": "Life & Death object.",
+      "accept": [
+        "Valvuripuu",
+        "Valvuripuu",
+        "Valvuripuud"
+      ]
+    },
+    {
+      "en": "Dynasty",
+      "et": "dünastia",
+      "note": "Royalty & Legacy family system.",
+      "accept": [
+        "dünastia",
+        "dünastiad",
+        "dünastiaid"
+      ]
+    },
+    {
+      "en": "Dynasty Head",
+      "et": "dünastia juht",
+      "note": "Royalty & Legacy role.",
+      "accept": [
+        "dünastia juht",
+        "dünastia juhi",
+        "dünastia juhti"
+      ]
+    },
+    {
+      "en": "Heir",
+      "et": "pärija",
+      "note": "Royalty & Legacy role.",
+      "accept": [
+        "pärija",
+        "pärija",
+        "pärijad"
+      ]
+    },
+    {
+      "en": "Dynasty Values",
+      "et": "dünastia väärtused",
+      "note": "Royalty & Legacy.",
+      "accept": [
+        "dünastia väärtused",
+        "dünastia väärtuste",
+        "dünastia väärtusi"
+      ]
+    },
+    {
+      "en": "Prestige",
+      "et": "prestiiž",
+      "note": "Royalty & Legacy resource.",
+      "accept": [
+        "prestiiž",
+        "prestiiži",
+        "prestiiži"
+      ]
+    },
+    {
+      "en": "Outcast",
+      "et": "heidik",
+      "note": "Royalty & Legacy social status.",
+      "accept": [
+        "heidik",
+        "heidikud",
+        "heidikuid"
+      ]
+    },
+    {
+      "en": "Unity Crisis",
+      "et": "ühtsuskriis",
+      "note": "Royalty & Legacy event.",
+      "accept": [
+        "ühtsuskriis",
+        "ühtsuskriisi"
+      ]
+    },
+    {
+      "en": "Dynasty Perk",
+      "et": "dünastiaeelis",
+      "note": "Royalty & Legacy reward.",
+      "accept": [
+        "dünastiaeelis",
+        "dünastiaeelise",
+        "dünastiaeeliseid"
+      ]
+    },
+    {
+      "en": "Dynasty Crest",
+      "et": "dünastia vapp",
+      "note": "Royalty & Legacy.",
+      "accept": [
+        "dünastia vapp",
+        "dünastia vapi"
+      ]
+    },
+    {
+      "en": "Noble",
+      "et": "aadlik",
+      "note": "Royalty & Legacy; adjective aadli-.",
+      "accept": [
+        "aadlik",
+        "aadlikud",
+        "aadliku"
+      ]
+    },
+    {
+      "en": "Grand Ball",
+      "et": "suur ball",
+      "note": "Royalty & Legacy event.",
+      "accept": [
+        "suur ball",
+        "suure balli",
+        "suurel ballil"
+      ]
+    },
+    {
+      "en": "Affinity",
+      "et": "kalduvus",
+      "note": "Royalty & Legacy aptitude family.",
+      "accept": [
+        "kalduvus",
+        "kalduvuse",
+        "kalduvust"
+      ]
+    },
+    {
+      "en": "Swordsmanship",
+      "et": "vehklemisoskus",
+      "note": "Royalty & Legacy skill.",
+      "accept": [
+        "vehklemisoskus",
+        "vehklemisoskuse",
+        "vehklemisoskust"
+      ]
+    },
+    {
+      "en": "Blue Blood",
+      "et": "sinine veri",
+      "note": "Royalty & Legacy trait/label.",
+      "accept": [
+        "sinine veri",
+        "sinise vere"
+      ]
+    },
+    {
+      "en": "Threadshifter",
+      "et": "niidipööraja",
+      "note": "Royalty & Legacy label.",
+      "accept": [
+        "niidipööraja",
+        "niidipöörajad"
+      ]
+    },
+    {
+      "en": "Ironclad Reputation",
+      "et": "raudkindel maine",
+      "note": "Royalty & Legacy label.",
+      "accept": [
+        "raudkindel maine",
+        "raudkindla maine"
+      ]
+    },
+    {
+      "en": "Wellness",
+      "et": "heaolu",
+      "note": "Spa Day skill and general wellbeing; not hyvinvointi.",
+      "accept": [
+        "heaolu",
+        "heaoluoskus",
+        "heaoluoskuse",
+        "heaoluoskust"
+      ]
+    },
+    {
+      "en": "Massage",
+      "et": "massaaž",
+      "note": "Spa Day service.",
+      "accept": [
+        "massaaž",
+        "massaaži",
+        "massaži"
+      ]
+    },
+    {
+      "en": "Yoga",
+      "et": "jooga",
+      "note": "Spa Day activity.",
+      "accept": [
+        "jooga",
+        "jooga",
+        "joogat"
+      ]
+    },
+    {
+      "en": "Meditation",
+      "et": "meditatsioon",
+      "note": "Spa Day activity.",
+      "accept": [
+        "meditatsioon",
+        "meditatsiooni",
+        "meditatsiooni"
+      ]
+    },
+    {
+      "en": "Garlic",
+      "et": "küüslauk",
+      "note": "Vampires counter; not Finnish valkosipuli.",
+      "accept": [
+        "küüslauk",
+        "küüslaugu",
+        "küüslauku"
+      ]
+    },
+    {
+      "en": "Power Points",
+      "et": "võimupunktid",
+      "note": "Vampire power currency.",
+      "accept": [
+        "võimupunktid",
+        "võimupunktide",
+        "võimupunkte"
+      ]
+    },
+    {
+      "en": "Thirst",
+      "et": "janu",
+      "note": "Vampire need; the bar is Jano.",
+      "accept": [
+        "janu",
+        "jano",
+        "janu"
+      ]
+    },
+    {
+      "en": "Pipe Organ",
+      "et": "orel",
+      "note": "Vampires skill object.",
+      "accept": [
+        "orel",
+        "oreli",
+        "orelid"
+      ]
+    },
+    {
+      "en": "Plasma Fruit",
+      "et": "plasmafruit",
+      "note": "Vampires plant/fruit.",
+      "accept": [
+        "plasmafruit",
+        "plasmafruite",
+        "plasmafruite"
+      ]
+    },
+    {
+      "en": "Waiter",
+      "et": "ettekandja",
+      "note": "Dine Out role.",
+      "accept": [
+        "ettekandja",
+        "ettekandjad",
+        "ettekandjat"
+      ]
+    },
+    {
+      "en": "Host",
+      "et": "peremees",
+      "note": "Dine Out role; also host of an event.",
+      "accept": [
+        "peremees",
+        "peremehe",
+        "peremeest"
+      ]
+    },
+    {
+      "en": "Chef",
+      "et": "kokk",
+      "note": "Dine Out role; also the cooking career.",
+      "accept": [
+        "kokk",
+        "koka",
+        "kokad"
+      ]
+    },
+    {
+      "en": "Incense",
+      "et": "viiruk",
+      "note": "Spa Day object.",
+      "accept": [
+        "viiruk",
+        "viiruki",
+        "viirukit"
+      ]
+    },
+    {
+      "en": "Facial Mask",
+      "et": "näomask",
+      "note": "Spa Day object.",
+      "accept": [
+        "näomask",
+        "näomaski",
+        "näomaski"
+      ]
+    },
+    {
+      "en": "Herbalism",
+      "et": "taimetarkus",
+      "note": "Outdoor Retreat skill; also used by other packs.",
+      "accept": [
+        "taimetarkus",
+        "taimetarkuse",
+        "taimetarkust"
+      ]
+    },
+    {
+      "en": "Gourmet Cooking",
+      "et": "gurmeekokandus",
+      "note": "cooking skill.",
+      "accept": [
+        "gurmeekokandus",
+        "gurmeekokanduse",
+        "gurmeekokandust"
+      ]
     }
   ],
   "style": [

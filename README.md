@@ -433,6 +433,12 @@ relaunched on the same screen, the buttons read `LOAD GAME` / `NEW GAME` again
   build's own verification: the package is reopened with the library and compared
   entry by entry against an independent byte-level reader. It has **not yet been
   launched in game**.
+- The **child-safe local build** (71 tables: the 36 installed add-ons plus the
+  surviving QoL/CC mods; 107,585 translations, 3,499 English fallback) was launched
+  by the owner on 2026-11-01 and reported working. The prepared **0.6.0 release
+  build** adds the three 0.5.0 packs not installed on this PC (EP07/EP09/EP10) and
+  the same mod tables: 74 tables, 115,714 translations, 3,716 English fallback; it
+  passes the build verification but is not separately playtested.
 - The **0.4.0 build** (seven tables: base, SP06, SP08, SP14, EP01, EP02 partial,
   EP06) was installed and launched on this machine: the main menu rendered in
   Estonian (2026-10-31). It was also downloaded from the Nexus page and deployed

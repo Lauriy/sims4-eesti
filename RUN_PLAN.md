@@ -132,12 +132,10 @@ re-translation of the 56,491 strings that already match.
 ## Release 0.5.0 — game through EP10, no mods (owner decision, 2026-10-31)
 
 Scope: **everything translated through EP10** — base game, EP01–EP10, plus whatever
-other packs already have entries — released on GitHub and Nexus. **Mods are not
-included.** They are deliberately deferred until the later DLC text exists, so they
-inherit the better terminology; they ship in a later release as their own optional,
-version-locked package (`MODS.txt` with filename + sha256 per package), never merged
-into the universal game package. The mod queue stays ready in `work/batches/mods/`
-(36 batches / 14,015 strings) plus the 15,047 parked entries.
+other packs already have entries — released on GitHub and Nexus. Mods were deferred
+from 0.5.0. **Owner decision 2026-11-01: the version-locked, separate-package rule
+is withdrawn; mod translations may ship in the main package.** 0.6.0 includes the
+surviving child-safe mod tables (MCCC, Lot51 Fashion Authority, ordinary CC).
 
 Release steps once EP10 is done (batch-011 and any residual EP10 strings):
 
@@ -152,3 +150,25 @@ Release steps once EP10 is done (batch-011 and any residual EP10 strings):
 5. GitHub release `v0.5.0-beta` with the package or zip; Nexus page 7387 version
    0.5.0 with the new file. No mod file in either release.
 6. Commit and push the repository.
+
+Done 2026-10-31: GitHub `v0.5.0-beta` published with the zip, and Nexus file
+11850 uploaded manually (API upload returns HTTP 404 with a personal key). Nexus
+reports 0.5.0, category MAIN, primary; its archive hash and the inner
+`!Sims4_Eesti.package` hash match the local build. The Nexus page description
+still carries the earlier short copy; the 0.5.0 text is ready in
+`work/nexus-page-0.5.0.bbcode.txt`.
+
+## Release 0.6.0 — installed packs + child-safe mods (owner decision, 2026-11-01)
+
+Scope: the 0.5.0 tables (base + EP01–EP10 + SP06/08/14) plus the installed packs
+translated afterwards (EP14 Horse Ranch, EP17 Life & Death, EP21 Royalty & Legacy;
+GP02/03/04/10; SP01–SP18, SP48, SP51, SP60) and the 20 surviving child-safe mod
+packages. Owner playtested the preceding child-safe local build and reports it
+works in game (2026-11-01).
+
+Build `dist/Sims4_Eesti_0.6.0.package` (2026-11-01): 119,430 occurrences, 115,714
+applied, 3,716 English fallback, 74 tables, 0 excluded, verification passed;
+sha256 `7adb8269dfc4852edb28090fcf1be5e96d3da722fe817943202fc752161a0a8a`.
+The test build (71 tables, child-safe scope) is `dist/Sims4_Eesti_ChildSafe.package`,
+sha256 `4d9fec2c…022dc8`, deployed and playtested. Publication and version naming
+are pending the owner's go-ahead.
