@@ -10,16 +10,20 @@ writes one `.package` you can drop into your Mods folder.
 **Scope:** an install-wide catalog (on the 2026-10-31 machine **194,880 English
 strings across 230 tables**: 163,302 game strings in 117 tables read from the
 live `Delta/<pack>` copies, and 31,578 strings in 87 mod packages) and
-**107,778 stored translations** — 92,424 game strings (56.6% of the game) and
-15,354 mod strings.
+**128,498 resolving stored translations** — 112,887 game strings and 15,611 mod
+strings. A further 425 older entries no longer resolve and are not applied.
 
-The **0.5.0 release ships 91,565 translations across 14 tables**: the base game,
-EP01–EP10 and three stuff packs, with 3,355 entries deliberately left in English.
-EP11 and later, the game packs and most stuff packs have barely been started;
-mod translations exist but are **not part of 0.5.0** — they are deferred until the
-later DLC text is translated, so they inherit its terminology. Untranslated
+The **0.6.0 release ships 115,714 translations across 74 tables**: the base game,
+EP01–EP10, EP14 Horse Ranch, EP17 Life & Death, EP21 Royalty & Legacy,
+GP02/03/04/10, the installed stuff packs (SP01–SP18, SP48, SP51, SP60), and the
+surviving child-safe mod tables (MCCC, Lot 51 Fashion Authority, ordinary CC),
+with 3,716 entries deliberately left in English. EP11–EP13, EP15–EP16, EP18–EP20,
+the uninstalled game packs and the remaining stuff packs are not translated, and
+adult/drug mod translations are excluded from this child-safe build. Untranslated
 entries keep their English text. This is not a complete Estonian localisation of
 the game, and no translation here has been reviewed by a human.
+
+Release: <https://github.com/Lauriy/sims4-eesti/releases/tag/v0.6.0>.
 
 ---
 
@@ -435,10 +439,12 @@ relaunched on the same screen, the buttons read `LOAD GAME` / `NEW GAME` again
   launched in game**.
 - The **child-safe local build** (71 tables: the 36 installed add-ons plus the
   surviving QoL/CC mods; 107,585 translations, 3,499 English fallback) was launched
-  by the owner on 2026-11-01 and reported working. The prepared **0.6.0 release
-  build** adds the three 0.5.0 packs not installed on this PC (EP07/EP09/EP10) and
-  the same mod tables: 74 tables, 115,714 translations, 3,716 English fallback; it
-  passes the build verification but is not separately playtested.
+  by the owner on 2026-11-01 and reported working. The **0.6.0 release build** adds
+  the three 0.5.0 packs not installed on this PC (EP07/EP09/EP10) and the same mod
+  tables: 74 tables, 115,714 translations, 3,716 English fallback. It passes the
+  build verification and was published on 2026-11-01 (asset
+  `Sims4_Eesti_0.6.0.zip`, sha256 `11857cd7…`); the three added packs are not
+  installed here, so that exact package was not separately playtested.
 - The **0.4.0 build** (seven tables: base, SP06, SP08, SP14, EP01, EP02 partial,
   EP06) was installed and launched on this machine: the main menu rendered in
   Estonian (2026-10-31). It was also downloaded from the Nexus page and deployed
